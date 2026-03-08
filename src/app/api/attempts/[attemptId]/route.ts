@@ -3,6 +3,9 @@ import { z } from "zod";
 import { persistAttempt } from "@/lib/data";
 import { getCurrentStudentRecord } from "@/lib/student-auth";
 
+export const runtime = "nodejs";
+export const preferredRegion = "bom1";
+
 const payloadSchema = z.object({
   answers: z.record(z.string(), z.object({
     selectedOptions: z.array(z.enum(["A", "B", "C", "D"])).default([]),

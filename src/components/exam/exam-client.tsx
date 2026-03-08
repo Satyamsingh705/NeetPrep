@@ -93,6 +93,14 @@ export function ExamClient(props: ExamClientProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submittedRef = useRef(false);
   const lowTimeWarningShownRef = useRef(initialRemainingSeconds > 0 && initialRemainingSeconds <= 300);
+  const dirtySaveRef = useRef(false);
+  const saveInFlightRef = useRef(false);
+  const latestAttemptStateRef = useRef({
+    answers,
+    currentQuestionIndex,
+    tabSwitchCount,
+    totalTimeSpentSeconds,
+  });
   const questions = props.questions;
   const currentQuestion = questions[currentQuestionIndex - 1];
   const currentQuestionPrompt = getDisplayPrompt(currentQuestion.prompt ?? "");
@@ -106,6 +114,35 @@ export function ExamClient(props: ExamClientProps) {
     });
   }, [props.attemptId]);
 
+  const flushAttemptSave = useCallback(async (force = false) => {
+    if (submittedRef.current || saveInFlightRef.current) {
+      return;
+    }
+
+    if (!force && !dirtySaveRef.current) {
+      return;
+    }
+
+    saveInFlightRef.current = true;
+
+    try {
+      await saveAttempt(latestAttemptStateRef.current);
+      dirtySaveRef.current = false;
+    } finally {
+      saveInFlightRef.current = false;
+    }
+  }, [saveAttempt]);
+
+  useEffect(() => {
+    latestAttemptStateRef.current = {
+      answers,
+      currentQuestionIndex,
+      tabSwitchCount,
+      totalTimeSpentSeconds,
+    };
+    dirtySaveRef.current = true;
+  }, [answers, currentQuestionIndex, tabSwitchCount, totalTimeSpentSeconds]);
+
   const submitAttempt = useCallback(async (auto = false) => {
     if (submittedRef.current) {
       return;
@@ -114,12 +151,7 @@ export function ExamClient(props: ExamClientProps) {
     submittedRef.current = true;
     setIsSubmitting(true);
 
-    await saveAttempt({
-      answers,
-      currentQuestionIndex,
-      tabSwitchCount,
-      totalTimeSpentSeconds,
-    });
+    await flushAttemptSave(true);
 
     const response = await fetch(`/api/attempts/${props.attemptId}/submit${auto ? "?auto=1" : ""}`, {
       method: "POST",
@@ -169,17 +201,12 @@ export function ExamClient(props: ExamClientProps) {
   }, [currentQuestion.id, submitAttempt]);
 
   useEffect(() => {
-    const timeout = window.setTimeout(() => {
-      void saveAttempt({
-        answers,
-        currentQuestionIndex,
-        tabSwitchCount,
-        totalTimeSpentSeconds,
-      });
-    }, 350);
+    const interval = window.setInterval(() => {
+      void flushAttemptSave();
+    }, 8000);
 
-    return () => window.clearTimeout(timeout);
-  }, [answers, currentQuestionIndex, saveAttempt, tabSwitchCount, totalTimeSpentSeconds]);
+    return () => window.clearInterval(interval);
+  }, [flushAttemptSave]);
 
   useEffect(() => {
     if (!timeWarning) {
@@ -226,6 +253,7 @@ export function ExamClient(props: ExamClientProps) {
     };
     const handlePageHide = () => {
       if (!submittedRef.current) {
+        void flushAttemptSave(true);
         navigator.sendBeacon(`/api/attempts/${props.attemptId}/submit?auto=1`, new Blob([], { type: "application/json" }));
       }
     };
@@ -248,7 +276,7 @@ export function ExamClient(props: ExamClientProps) {
       window.removeEventListener("popstate", handlePopState);
       window.removeEventListener("pagehide", handlePageHide);
     };
-  }, [props.attemptId]);
+  }, [flushAttemptSave, props.attemptId]);
 
   const counts = useMemo(() => {
     return questions.reduce(

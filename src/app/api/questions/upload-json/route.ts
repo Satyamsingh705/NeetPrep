@@ -5,6 +5,9 @@ import { getCurrentAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { adminSubjectValues } from "@/lib/subject-categories";
 
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
 const optionSchema = z.object({
   key: z.enum(["A", "B", "C", "D"]),
   text: z.string().min(1),

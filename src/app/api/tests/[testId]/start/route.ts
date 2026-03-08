@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { startAttempt } from "@/lib/data";
 import { getCurrentStudentRecord } from "@/lib/student-auth";
 
+export const runtime = "nodejs";
+export const preferredRegion = "bom1";
+
 export async function POST(_request: Request, { params }: { params: Promise<{ testId: string }> }) {
   try {
     const { testId } = await params;

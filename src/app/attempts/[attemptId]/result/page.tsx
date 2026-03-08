@@ -4,6 +4,8 @@ import ResultDashboardClient from "@/components/results/result-dashboard-client"
 import { getStudentAttemptResult } from "@/lib/data";
 import { requireCurrentStudentRecord } from "@/lib/student-auth";
 
+export const preferredRegion = "bom1";
+
 export default async function ResultPage({ params }: { params: Promise<{ attemptId: string }> }) {
   const student = await requireCurrentStudentRecord();
   const { attemptId } = await params;

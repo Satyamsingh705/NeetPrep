@@ -4,6 +4,9 @@ import { getCurrentAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { storeImageQuestionFiles } from "@/lib/uploads";
 
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
 export async function POST(request: Request) {
   try {
     const admin = await getCurrentAdmin();

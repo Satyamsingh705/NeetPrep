@@ -3,6 +3,8 @@ import { InstructionsClient } from "@/components/exam/instructions-client";
 import { getInstructionData } from "@/lib/data";
 import { requireCurrentStudent } from "@/lib/student-auth";
 
+export const preferredRegion = "bom1";
+
 export default async function InstructionsPage({ params }: { params: Promise<{ testId: string }> }) {
   await requireCurrentStudent();
   const { testId } = await params;

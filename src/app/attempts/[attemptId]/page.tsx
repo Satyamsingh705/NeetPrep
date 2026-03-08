@@ -3,6 +3,8 @@ import { ExamClient } from "@/components/exam/exam-client";
 import { getAttemptData } from "@/lib/data";
 import { requireCurrentStudentRecord } from "@/lib/student-auth";
 
+export const preferredRegion = "bom1";
+
 export default async function AttemptPage({ params }: { params: Promise<{ attemptId: string }> }) {
   const student = await requireCurrentStudentRecord();
   const { attemptId } = await params;

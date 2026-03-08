@@ -4,6 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { verifyPassword } from "@/lib/password";
 import { buildStudentSessionCookie } from "@/lib/student-auth";
 
+export const runtime = "nodejs";
+export const preferredRegion = "bom1";
+
 const payloadSchema = z.object({
   username: z.string().min(1),
   password: z.string().min(1),

@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { submitAttempt } from "@/lib/data";
 import { getCurrentStudentRecord } from "@/lib/student-auth";
 
+export const runtime = "nodejs";
+export const preferredRegion = "bom1";
+
 async function handleSubmit(request: Request, params: Promise<{ attemptId: string }>) {
   try {
     const { attemptId } = await params;

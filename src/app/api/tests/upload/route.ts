@@ -8,6 +8,9 @@ import { deleteStoredFile } from "@/lib/storage";
 import { adminSubjectValues } from "@/lib/subject-categories";
 import { renderPdfToImageQuestions, storeImageQuestionFiles } from "@/lib/uploads";
 
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
 const optionSchema = z.object({
   key: z.enum(["A", "B", "C", "D"]),
   text: z.string().min(1),

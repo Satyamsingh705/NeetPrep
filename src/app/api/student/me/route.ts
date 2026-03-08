@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { getCurrentStudent } from "@/lib/student-auth";
 
+export const runtime = "nodejs";
+export const preferredRegion = "bom1";
+
 export async function GET() {
   const student = await getCurrentStudent();
 
