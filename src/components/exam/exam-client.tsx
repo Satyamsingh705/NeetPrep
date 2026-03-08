@@ -110,7 +110,6 @@ export function ExamClient(props: ExamClientProps) {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
-      keepalive: true,
     });
   }, [props.attemptId]);
 
@@ -151,11 +150,16 @@ export function ExamClient(props: ExamClientProps) {
     submittedRef.current = true;
     setIsSubmitting(true);
 
-    await flushAttemptSave(true);
+    try {
+      await flushAttemptSave(true);
+    } catch {
+      // Proceed with submit even if the standalone save fails.
+    }
 
     const response = await fetch(`/api/attempts/${props.attemptId}/submit${auto ? "?auto=1" : ""}`, {
       method: "POST",
-      keepalive: true,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(latestAttemptStateRef.current),
     });
 
     if (!response.ok) {
@@ -253,8 +257,8 @@ export function ExamClient(props: ExamClientProps) {
     };
     const handlePageHide = () => {
       if (!submittedRef.current) {
-        void flushAttemptSave(true);
-        navigator.sendBeacon(`/api/attempts/${props.attemptId}/submit?auto=1`, new Blob([], { type: "application/json" }));
+        const body = new Blob([JSON.stringify(latestAttemptStateRef.current)], { type: "application/json" });
+        navigator.sendBeacon(`/api/attempts/${props.attemptId}/submit?auto=1`, body);
       }
     };
 
