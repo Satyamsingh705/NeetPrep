@@ -194,6 +194,25 @@ export async function getUngroupedTestSeriesDocuments() {
   }
 }
 
+export async function getTestSeriesGroupById(groupId: string) {
+  try {
+    return await prisma.testSeriesGroup.findUnique({
+      where: { id: groupId },
+      include: {
+        documents: {
+          orderBy: [{ orderIndex: "asc" }, { createdAt: "asc" }],
+        },
+      },
+    });
+  } catch (error) {
+    if (isDatabaseUnavailableError(error)) {
+      return null;
+    }
+
+    throw error;
+  }
+}
+
 export async function getStudentAttemptCount(studentId: string) {
   try {
     return await prisma.attempt.count({

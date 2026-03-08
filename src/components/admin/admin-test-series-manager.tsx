@@ -32,11 +32,14 @@ type AdminTestSeriesManagerProps = {
 export function AdminTestSeriesManager({ groups, ungroupedDocuments }: AdminTestSeriesManagerProps) {
   const router = useRouter();
   const [title, setTitle] = useState("");
+  const [answerKeyTitle, setAnswerKeyTitle] = useState("");
   const [groupTitle, setGroupTitle] = useState("");
   const [groupDescription, setGroupDescription] = useState("");
   const [groupOrderIndex, setGroupOrderIndex] = useState(0);
   const [orderIndex, setOrderIndex] = useState(0);
+  const [answerKeyOrderIndex, setAnswerKeyOrderIndex] = useState(0);
   const [file, setFile] = useState<File | null>(null);
+  const [answerKeyFile, setAnswerKeyFile] = useState<File | null>(null);
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -60,11 +63,17 @@ export function AdminTestSeriesManager({ groups, ungroupedDocuments }: AdminTest
     try {
       const formData = new FormData();
       formData.set("title", title);
+      formData.set("answerKeyTitle", answerKeyTitle);
       formData.set("groupTitle", groupTitle);
       formData.set("groupDescription", groupDescription);
       formData.set("groupOrderIndex", String(groupOrderIndex));
       formData.set("orderIndex", String(orderIndex));
+      formData.set("answerKeyOrderIndex", String(answerKeyOrderIndex));
       formData.set("file", file);
+
+      if (answerKeyFile) {
+        formData.set("answerKeyFile", answerKeyFile);
+      }
 
       const response = await fetch("/api/test-series", {
         method: "POST",
@@ -78,11 +87,14 @@ export function AdminTestSeriesManager({ groups, ungroupedDocuments }: AdminTest
 
       setMessage(payload.message ?? "Uploaded successfully.");
       setTitle("");
+      setAnswerKeyTitle("");
       setGroupTitle("");
       setGroupDescription("");
       setGroupOrderIndex(0);
       setOrderIndex(0);
+      setAnswerKeyOrderIndex(0);
       setFile(null);
+      setAnswerKeyFile(null);
       event.currentTarget.reset();
       router.refresh();
     } catch (error) {
@@ -155,7 +167,7 @@ export function AdminTestSeriesManager({ groups, ungroupedDocuments }: AdminTest
           <div className="rounded-full bg-[#f6e4d3] px-3 py-1 text-sm font-semibold text-[#b85f20]">{totalDocuments} PDFs</div>
         </div>
 
-        <div className="mt-5 space-y-4">
+        <div className="mt-5 max-h-[780px] space-y-4 overflow-y-auto pr-2">
           {groups.length > 0 || ungroupedDocuments.length > 0 ? (
             <>
               {groups.map((group) => (
@@ -238,11 +250,15 @@ export function AdminTestSeriesManager({ groups, ungroupedDocuments }: AdminTest
 
       <section className="panel rounded-[1.4rem] p-6">
         <h2 className="text-2xl font-semibold text-[#2f241c]">Add Test Series</h2>
-        <p className="mt-2 text-sm leading-6 text-[#6d5a49]">Upload a PDF, optionally assign it to a group, and control the ordering students see.</p>
+        <p className="mt-2 text-sm leading-6 text-[#6d5a49]">Upload a test series PDF, optionally add an answer key PDF in the same submission, assign them to a group, and control the ordering students see.</p>
         <form onSubmit={handleSubmit} className="mt-5 grid gap-4">
           <label className="grid gap-2 text-sm text-[#6f5d4d]">
-            Title
+            Test Series Title
             <input value={title} onChange={(event) => setTitle(event.target.value)} className="rounded-lg border border-[#dacdbf] bg-white px-3 py-3" placeholder="e.g. NEET Test Series 01" required />
+          </label>
+          <label className="grid gap-2 text-sm text-[#6f5d4d]">
+            Answer Key Title
+            <input value={answerKeyTitle} onChange={(event) => setAnswerKeyTitle(event.target.value)} className="rounded-lg border border-[#dacdbf] bg-white px-3 py-3" placeholder="e.g. NEET Test Series 01 Answer Key" />
           </label>
           <label className="grid gap-2 text-sm text-[#6f5d4d]">
             Group Title
@@ -258,16 +274,24 @@ export function AdminTestSeriesManager({ groups, ungroupedDocuments }: AdminTest
               <input type="number" min={0} value={groupOrderIndex} onChange={(event) => setGroupOrderIndex(Number(event.target.value))} className="rounded-lg border border-[#dacdbf] bg-white px-3 py-3" />
             </label>
             <label className="grid gap-2 text-sm text-[#6f5d4d]">
-              PDF Order
+              Test Series Order
               <input type="number" min={0} value={orderIndex} onChange={(event) => setOrderIndex(Number(event.target.value))} className="rounded-lg border border-[#dacdbf] bg-white px-3 py-3" />
             </label>
           </div>
           <label className="grid gap-2 text-sm text-[#6f5d4d]">
-            PDF File
+            Answer Key Order
+            <input type="number" min={0} value={answerKeyOrderIndex} onChange={(event) => setAnswerKeyOrderIndex(Number(event.target.value))} className="rounded-lg border border-[#dacdbf] bg-white px-3 py-3" />
+          </label>
+          <label className="grid gap-2 text-sm text-[#6f5d4d]">
+            Test Series PDF
             <input type="file" accept="application/pdf" onChange={(event) => setFile(event.target.files?.[0] ?? null)} className="rounded-lg border border-[#dacdbf] bg-white px-3 py-3" required />
           </label>
+          <label className="grid gap-2 text-sm text-[#6f5d4d]">
+            Answer Key PDF
+            <input type="file" accept="application/pdf" onChange={(event) => setAnswerKeyFile(event.target.files?.[0] ?? null)} className="rounded-lg border border-[#dacdbf] bg-white px-3 py-3" />
+          </label>
           <button type="submit" className="btn-primary w-full justify-center" disabled={isSubmitting}>
-            {isSubmitting ? "Uploading..." : "Upload Test Series PDF"}
+            {isSubmitting ? "Uploading..." : "Upload Test Series"}
           </button>
         </form>
         {message ? <div className="mt-4 text-sm text-[#6d5a49]">{message}</div> : null}
