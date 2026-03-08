@@ -8,6 +8,12 @@ export type QuestionOption = {
   text: string;
 };
 
+export type QuestionTable = {
+  caption?: string;
+  headers?: string[];
+  rows: string[][];
+};
+
 export type StoredAnswer = {
   selectedOptions: OptionKey[];
   markedForReview: boolean;
@@ -32,6 +38,7 @@ export type QuestionPayload = {
   orderIndex: number;
   type: QuestionType;
   prompt: string | null;
+  table?: QuestionTable | null;
   imagePath: string | null;
   options: QuestionOption[] | null;
   correctAnswers: OptionKey[];
@@ -56,6 +63,7 @@ export type UploadJsonQuestion = {
   subject: Subject;
   chapter: string;
   prompt: string;
+  table?: QuestionTable;
   options: QuestionOption[];
   correctAnswers: OptionKey[];
   answerPolicy?: AnswerPolicy;

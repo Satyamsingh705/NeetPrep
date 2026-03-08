@@ -14,6 +14,7 @@ const payloadSchema = z.object({
   incorrectMarks: z.number(),
   unansweredMarks: z.number(),
   published: z.boolean().optional(),
+  assignedSection: z.enum(adminSubjectValues).optional(),
   mode: z.nativeEnum(TestMode),
   subjectConfigs: z.array(z.object({ subject: z.enum(adminSubjectValues), sectionA: z.number().min(0), sectionB: z.number().min(0) })).optional(),
   questionConfigs: z.array(z.object({ subject: z.enum(adminSubjectValues), chapter: z.string().optional(), count: z.number().min(1) })).optional(),
@@ -30,6 +31,7 @@ export async function POST(request: Request) {
     const payload = payloadSchema.parse(await request.json());
     const test = await createTestWithQuestions(prisma, {
       ...payload,
+      assignedSection: payload.assignedSection ?? (payload.mode === TestMode.NEET_PATTERN ? "MAJOR_TEST" : undefined),
       subjectConfigs: payload.subjectConfigs?.map((config) => ({ ...config, subject: config.subject as Subject })),
       questionConfigs: payload.questionConfigs?.map((config) => ({ ...config, subject: config.subject as Subject })),
     });

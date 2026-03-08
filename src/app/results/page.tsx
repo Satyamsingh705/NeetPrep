@@ -1,9 +1,9 @@
 import { getSubmittedAttemptResults } from "@/lib/data";
 import { formatDateTime } from "@/lib/format-date-time";
-import { requireCurrentStudentRecord } from "@/lib/student-auth";
+import { requireCurrentStudent } from "@/lib/student-auth";
 
 export default async function StudentResultsPage() {
-  const student = await requireCurrentStudentRecord();
+  const student = await requireCurrentStudent();
   const attempts = await getSubmittedAttemptResults(student.id);
 
   return (

@@ -1,4 +1,7 @@
+import { QuestionContent } from "@/components/questions/question-content";
+import { getDisplayPrompt } from "@/lib/question-content";
 import { getSubjectLabel } from "@/lib/subject-categories";
+import type { QuestionTable } from "@/lib/types";
 
 export type ResultDashboardProps = {
   attempt: {
@@ -48,6 +51,7 @@ export type ResultDashboardProps = {
       chapter: string;
       section: string;
       prompt: string | null;
+      table?: QuestionTable | null;
       options: Array<{ key: string; text: string }> | null;
       imagePath: string | null;
       type: string;
@@ -61,26 +65,58 @@ export type ResultDashboardProps = {
   };
 };
 
-function getDisplayPrompt(prompt: string | null) {
-  const normalizedPrompt = (prompt ?? "").trim();
-
-  if (!normalizedPrompt) {
-    return "Image based question";
+function getOutcomeContainerClass(outcome: string) {
+  if (outcome === "correct") {
+    return "border-[#bfe5c8] bg-[#f3fcf5]";
   }
 
-  const prefixedQuestionMatch = normalizedPrompt.match(/^(?:[^|\n]+\|\s*)+(?:Q\d+\s*[:.-]?\s*)(.+)$/i);
-
-  if (prefixedQuestionMatch?.[1]) {
-    return prefixedQuestionMatch[1].trim();
+  if (outcome === "incorrect") {
+    return "border-[#efc1bc] bg-[#fff4f2]";
   }
 
-  const directQuestionMatch = normalizedPrompt.match(/^Q\d+\s*[:.-]?\s*(.+)$/i);
-
-  if (directQuestionMatch?.[1]) {
-    return directQuestionMatch[1].trim();
+  if (outcome === "ignored") {
+    return "border-[#d7c8ee] bg-[#faf7ff]";
   }
 
-  return normalizedPrompt;
+  return "border-[#eadbcd] bg-[#fffdfa]";
+}
+
+function getOptionState(question: ResultDashboardProps["result"]["questionWise"][number], optionKey: string) {
+  const isSelected = question.selectedOptions.includes(optionKey);
+  const isCorrect = question.correctAnswers.includes(optionKey);
+
+  if (isCorrect && isSelected) {
+    return "correct-selected";
+  }
+
+  if (isCorrect) {
+    return "correct";
+  }
+
+  if (isSelected && question.outcome === "incorrect") {
+    return "wrong-selected";
+  }
+
+  if (isSelected) {
+    return "selected";
+  }
+
+  return "neutral";
+}
+
+function getOptionClass(optionState: ReturnType<typeof getOptionState>) {
+  switch (optionState) {
+    case "correct-selected":
+      return "border border-[#9ad2a8] bg-[#eaf9ee] text-[#1f6b34]";
+    case "correct":
+      return "border border-[#b8e0c2] bg-[#f3fcf5] text-[#2d7a42]";
+    case "wrong-selected":
+      return "border border-[#e0a8a0] bg-[#fff0ee] text-[#a33f35]";
+    case "selected":
+      return "border border-[#d7c5b3] bg-[#fff7ef] text-[#6b5642]";
+    default:
+      return "bg-[#faf5ef] text-[#5d4d40]";
+  }
 }
 
 function formatDuration(totalSeconds: number) {
@@ -140,7 +176,7 @@ export function ResultDashboard({ attempt, test, result }: ResultDashboardProps)
         <div className="mt-5 max-h-[820px] overflow-y-auto pr-2">
           <div className="space-y-3">
             {result.questionWise.map((question) => (
-              <div key={question.id} className="rounded-[1rem] border border-[#eadbcd] bg-[#fffdfa] p-4 text-sm text-[#5d4d40]">
+              <div key={question.id} className={`rounded-[1rem] border p-4 text-sm text-[#5d4d40] ${getOutcomeContainerClass(question.outcome)}`}>
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div className="font-semibold text-[#2f241c]">Q{question.orderIndex}</div>
                   <div className="rounded-full px-3 py-1 text-xs font-semibold text-white" style={{ backgroundColor: question.outcome === "correct" ? "#30a451" : question.outcome === "incorrect" ? "#d85b58" : question.outcome === "ignored" ? "#7d57a7" : "#8b8b8b" }}>
@@ -149,7 +185,12 @@ export function ResultDashboard({ attempt, test, result }: ResultDashboardProps)
                 </div>
                 <div className="mt-3 rounded-[0.9rem] border border-[#efe3d6] bg-white p-4">
                   <div className="text-sm font-semibold text-[#2f241c]">Question</div>
-                  <div className="mt-2 text-sm leading-6 text-[#4f4338]">{getDisplayPrompt(question.prompt)}</div>
+                  <QuestionContent
+                    prompt={getDisplayPrompt(question.prompt) || "Image based question"}
+                    table={question.table}
+                    promptClassName="mt-2 text-sm leading-6 text-[#4f4338] whitespace-pre-line"
+                    tableClassName="mt-4"
+                  />
                   {question.type === "IMAGE" && question.imagePath ? (
                     <div className="mt-4 overflow-hidden rounded-md border border-[#eadbcd] bg-[#fcfbf8] p-3">
                       <img src={question.imagePath} alt={`Question ${question.orderIndex}`} className="h-auto w-full object-contain" />
@@ -157,17 +198,27 @@ export function ResultDashboard({ attempt, test, result }: ResultDashboardProps)
                   ) : null}
                   {question.options && question.options.length > 0 ? (
                     <div className="mt-4 space-y-2 text-sm text-[#5d4d40]">
-                      {question.options.map((option) => (
-                        <div key={`${question.id}-${option.key}`} className="rounded-[0.75rem] bg-[#faf5ef] px-3 py-2">
-                          <span className="font-semibold text-[#2f241c]">{option.key}.</span> {option.text}
+                      {question.options.map((option) => {
+                        const optionState = getOptionState(question, option.key);
+
+                        return (
+                        <div key={`${question.id}-${option.key}`} className={`rounded-[0.75rem] px-3 py-2 ${getOptionClass(optionState)}`}>
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                              <span className="font-semibold text-[#2f241c]">{option.key}.</span> {option.text}
+                            </div>
+                            {optionState === "correct" || optionState === "correct-selected" ? <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#2d7a42]">Correct</span> : null}
+                            {optionState === "wrong-selected" ? <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#a33f35]">Your Choice</span> : null}
+                          </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   ) : null}
                 </div>
                 <div className="mt-2 flex flex-wrap gap-4">
-                  <span>Selected: {question.selectedOptions.join(", ") || "-"}</span>
-                  <span>Correct: {question.correctAnswers.join(", ") || "-"}</span>
+                  <span className={question.outcome === "incorrect" ? "font-semibold text-[#b54a40]" : question.outcome === "correct" ? "font-semibold text-[#2d7a42]" : undefined}>Selected: {question.selectedOptions.join(", ") || "-"}</span>
+                  <span className="font-semibold text-[#2d7a42]">Correct: {question.correctAnswers.join(", ") || "-"}</span>
                   <span>Marks: {question.awardedMarks}</span>
                   <span>Time: {question.timeSpentSeconds}s</span>
                 </div>

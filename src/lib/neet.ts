@@ -166,6 +166,7 @@ export function evaluateAttempt(test: TestMeta, questions: QuestionPayload[], an
       chapter: question.chapter,
       section: question.section,
       prompt: question.prompt,
+      table: question.table,
       options: question.options,
       imagePath: question.imagePath,
       type: question.type,

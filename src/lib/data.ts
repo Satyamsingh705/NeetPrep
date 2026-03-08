@@ -1,5 +1,6 @@
 import { AttemptStatus, Prisma, QuestionType, TestMode } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { getQuestionTable } from "@/lib/question-content";
 import { evaluateAttempt, getInitialAnswerState, getPaletteStatus, normalizeStoredAnswer } from "@/lib/neet";
 import { getSubjectLabel } from "@/lib/subject-categories";
 import type { QuestionOption, QuestionPayload, StoredAnswersMap } from "@/lib/types";
@@ -18,6 +19,7 @@ function normalizeQuestion(question: {
     chapter: string;
     type: QuestionType;
     prompt: string | null;
+    metadata: Prisma.JsonValue;
     imagePath: string | null;
     options: Prisma.JsonValue;
     correctAnswers: Prisma.JsonValue;
@@ -34,6 +36,7 @@ function normalizeQuestion(question: {
     orderIndex: question.orderIndex,
     type: question.question.type,
     prompt: question.question.prompt,
+    table: getQuestionTable(question.question.metadata),
     imagePath: question.question.imagePath,
     options: (question.question.options as QuestionOption[] | null) ?? null,
     correctAnswers: (question.question.correctAnswers as string[]).filter(Boolean),

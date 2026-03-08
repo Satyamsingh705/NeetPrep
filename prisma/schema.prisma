@@ -3,40 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
-}
-
-enum Subject {
-  PHYSICS
-  CHEMISTRY
-  BIOLOGY
-  MAJOR_TEST
-  BOTANY
-  ZOOLOGY
-}
-
-enum QuestionType {
-  TEXT
-  IMAGE
-}
-
-enum AnswerPolicy {
-  SINGLE
-  MULTIPLE
-  DROPPED
-}
-
-enum TestMode {
-  CUSTOM
-  NEET_PATTERN
-}
-
-enum AttemptStatus {
-  IN_PROGRESS
-  SUBMITTED
-  AUTO_SUBMITTED
 }
 
 model Student {
@@ -44,9 +13,9 @@ model Student {
   username     String    @unique
   passwordHash String
   displayName  String?
-  isActive     Boolean   @default(true)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+  isActive     Boolean   @default(true)
   attempts     Attempt[]
 }
 
@@ -70,7 +39,7 @@ model TestSeriesGroup {
 }
 
 model Question {
-  id             String        @id @default(cuid())
+  id             String         @id @default(cuid())
   subject        Subject
   chapter        String
   type           QuestionType
@@ -78,28 +47,27 @@ model Question {
   options        Json?
   imagePath      String?
   correctAnswers Json
-  answerPolicy   AnswerPolicy  @default(SINGLE)
+  answerPolicy   AnswerPolicy   @default(SINGLE)
   metadata       Json?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
   testQuestions  TestQuestion[]
 }
 
 model TestSeriesDocument {
-  id         String   @id @default(cuid())
+  id         String           @id @default(cuid())
   title      String
   fileName   String
   filePath   String
-  orderIndex Int      @default(0)
+  orderIndex Int              @default(0)
   groupId    String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  group      TestSeriesGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  group      TestSeriesGroup? @relation(fields: [groupId], references: [id])
 }
 
 model Test {
   id                      String         @id @default(cuid())
-  testCode                String?        @unique
   name                    String
   description             String?
   durationMinutes         Int
@@ -113,8 +81,9 @@ model Test {
   config                  Json?
   createdAt               DateTime       @default(now())
   updatedAt               DateTime       @updatedAt
-  testQuestions           TestQuestion[]
+  testCode                String?        @unique
   attempts                Attempt[]
+  testQuestions           TestQuestion[]
 }
 
 model TestQuestion {
@@ -125,8 +94,8 @@ model TestQuestion {
   subject    Subject
   section    String
   chapter    String
-  test       Test     @relation(fields: [testId], references: [id], onDelete: Cascade)
   question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  test       Test     @relation(fields: [testId], references: [id], onDelete: Cascade)
 
   @@unique([testId, orderIndex])
 }
@@ -145,6 +114,37 @@ model Attempt {
   tabSwitchCount        Int           @default(0)
   totalTimeSpentSeconds Int           @default(0)
   result                Json?
+  student               Student?      @relation(fields: [studentId], references: [id])
   test                  Test          @relation(fields: [testId], references: [id], onDelete: Cascade)
-  student               Student?      @relation(fields: [studentId], references: [id], onDelete: SetNull)
+}
+
+enum Subject {
+  PHYSICS
+  CHEMISTRY
+  BOTANY
+  ZOOLOGY
+  BIOLOGY
+  MAJOR_TEST
+}
+
+enum QuestionType {
+  TEXT
+  IMAGE
+}
+
+enum AnswerPolicy {
+  SINGLE
+  MULTIPLE
+  DROPPED
+}
+
+enum TestMode {
+  CUSTOM
+  NEET_PATTERN
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  AUTO_SUBMITTED
 }

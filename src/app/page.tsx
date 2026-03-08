@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getStudentAttemptCount, getStudentHomeSummary, getTestsForListing } from "@/lib/data";
 import { getTestsBySection, studentSections } from "@/lib/student-sections";
 import { StudentLoginForm } from "@/components/student/student-login-form";
-import { getCurrentStudent, getCurrentStudentRecord } from "@/lib/student-auth";
+import { getCurrentStudent } from "@/lib/student-auth";
 
 export default async function HomePage() {
   const student = await getCurrentStudent();
@@ -23,25 +23,10 @@ export default async function HomePage() {
     );
   }
 
-  const persistedStudent = await getCurrentStudentRecord();
-
-  if (!persistedStudent) {
-    return (
-      <main className="mx-auto flex max-w-[980px] flex-col gap-8 px-6 py-10">
-        <section className="panel rounded-[1.6rem] p-8 lg:p-10">
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#b56d3d]">Student Access</p>
-          <h1 className="mt-3 text-5xl leading-[1.05] font-semibold text-[#2f241c]">Student login required.</h1>
-          <p className="mt-4 max-w-2xl text-lg leading-8 text-[#65584a]">Your session is no longer valid after the database refresh. Please sign in again.</p>
-          <StudentLoginForm />
-        </section>
-      </main>
-    );
-  }
-
   const [summary, tests, totalAttempts] = await Promise.all([
     getStudentHomeSummary(),
-    getTestsForListing(persistedStudent.id),
-    getStudentAttemptCount(persistedStudent.id),
+    getTestsForListing(student.id),
+    getStudentAttemptCount(student.id),
   ]);
   const sectionTestsMap = getTestsBySection(tests);
 

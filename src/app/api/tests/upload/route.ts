@@ -16,10 +16,33 @@ const optionSchema = z.object({
   text: z.string().min(1),
 });
 
+const tableSchema = z.object({
+  caption: z.string().min(1).optional(),
+  headers: z.array(z.string()).min(1).optional(),
+  rows: z.array(z.array(z.string()).min(1)).min(1),
+}).superRefine((table, context) => {
+  const expectedColumnCount = table.headers?.length ?? table.rows[0]?.length ?? 0;
+
+  if (expectedColumnCount === 0) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "Table must have at least one column." });
+    return;
+  }
+
+  table.rows.forEach((row, index) => {
+    if (row.length !== expectedColumnCount) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Table row ${index + 1} must contain ${expectedColumnCount} columns.`,
+      });
+    }
+  });
+});
+
 const jsonQuestionSchema = z.object({
   subject: z.enum(adminSubjectValues).optional(),
   chapter: z.string().min(1).optional(),
   prompt: z.string().min(1),
+  table: tableSchema.optional(),
   options: z.array(optionSchema).length(4),
   correctAnswers: z.array(z.enum(["A", "B", "C", "D"])).min(1).optional(),
   correctAnswer: z.enum(["A", "B", "C", "D"]).optional(),
@@ -69,8 +92,12 @@ export async function POST(request: Request) {
       pdfAnswerKey: formData.get("pdfAnswerKey") || undefined,
     });
 
+    const parsedJsonContent = jsonFile instanceof File
+      ? JSON.parse(await jsonFile.text())
+      : [];
+
     const parsedJsonRows = jsonFile instanceof File
-      ? z.array(jsonQuestionSchema).parse(JSON.parse(await jsonFile.text()))
+      ? z.array(jsonQuestionSchema).parse(Array.isArray(parsedJsonContent) ? parsedJsonContent : [parsedJsonContent])
       : [];
 
     const chapterLabel = payload.name.trim();
@@ -107,6 +134,7 @@ export async function POST(request: Request) {
           chapter: row.chapter ?? chapterLabel,
           type: QuestionType.TEXT,
           prompt: row.prompt,
+          metadata: row.table ? { table: row.table } : Prisma.JsonNull,
           options: row.options,
           imagePath: null,
           correctAnswers,
@@ -118,6 +146,7 @@ export async function POST(request: Request) {
         chapter: row.chapter,
         type: row.type,
         prompt: row.prompt,
+        metadata: Prisma.JsonNull,
         options: row.options ?? Prisma.JsonNull,
         imagePath: row.imagePath,
         correctAnswers: row.correctAnswers,
@@ -128,6 +157,7 @@ export async function POST(request: Request) {
         chapter: row.chapter,
         type: row.type,
         prompt: row.prompt,
+        metadata: Prisma.JsonNull,
         options: row.options ?? Prisma.JsonNull,
         imagePath: row.imagePath,
         correctAnswers: row.correctAnswers,

@@ -2,7 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { QuestionContent } from "@/components/questions/question-content";
 import { getPaletteStatus, normalizeStoredAnswer } from "@/lib/neet";
+import { getDisplayPrompt } from "@/lib/question-content";
 import type { OptionKey, QuestionPayload, StoredAnswersMap } from "@/lib/types";
 
 type ExamClientProps = {
@@ -46,23 +48,6 @@ function blankAnswer() {
     visited: false,
     timeSpentSeconds: 0,
   };
-}
-
-function getDisplayPrompt(prompt: string) {
-  const normalizedPrompt = prompt.trim();
-  const prefixedQuestionMatch = normalizedPrompt.match(/^(?:[^|\n]+\|\s*)+(?:Q\d+\s*[:.-]?\s*)(.+)$/i);
-
-  if (prefixedQuestionMatch?.[1]) {
-    return prefixedQuestionMatch[1].trim();
-  }
-
-  const directQuestionMatch = normalizedPrompt.match(/^Q\d+\s*[:.-]?\s*(.+)$/i);
-
-  if (directQuestionMatch?.[1]) {
-    return directQuestionMatch[1].trim();
-  }
-
-  return normalizedPrompt;
 }
 
 export function ExamClient(props: ExamClientProps) {
@@ -459,7 +444,14 @@ export function ExamClient(props: ExamClientProps) {
               Q {String(currentQuestion.orderIndex).padStart(2, "0")} of {String(props.test.totalQuestions).padStart(2, "0")}
             </div>
             <div className="max-w-[900px] text-[0.98rem] leading-7 text-[#2d241d] lg:text-[1.02rem]">
-              {currentQuestion.type === "TEXT" ? currentQuestionPrompt : "Image based question"}
+              {currentQuestion.type === "TEXT" ? (
+                <QuestionContent
+                  prompt={currentQuestionPrompt}
+                  table={currentQuestion.table}
+                  promptClassName="whitespace-pre-line"
+                  tableClassName="mt-4"
+                />
+              ) : "Image based question"}
             </div>
           </div>
 

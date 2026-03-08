@@ -1,5 +1,5 @@
 import { getTestsForListing } from "@/lib/data";
-import { isSubjectInCategory, type AdminSubjectCategory } from "@/lib/subject-categories";
+import { isSubjectInCategory, normalizeSubjectCategory, type AdminSubjectCategory } from "@/lib/subject-categories";
 
 export type ListedTest = Awaited<ReturnType<typeof getTestsForListing>>[number];
 
@@ -12,17 +12,60 @@ export const studentSections = [
 
 export type StudentSectionId = (typeof studentSections)[number]["id"];
 
-function getAssignedSection(test: ListedTest) {
+function getStoredAssignedSection(test: ListedTest) {
   if (!test.config || typeof test.config !== "object" || Array.isArray(test.config)) {
     return null;
   }
 
   const assignedSection = (test.config as { assignedSection?: unknown }).assignedSection;
 
-  return typeof assignedSection === "string" ? assignedSection as AdminSubjectCategory : null;
+  return typeof assignedSection === "string" ? normalizeSubjectCategory(assignedSection) : null;
+}
+
+function getAssignedSection(test: ListedTest) {
+  if (test.mode === "NEET_PATTERN") {
+    return "MAJOR_TEST";
+  }
+
+  const storedAssignedSection = getStoredAssignedSection(test);
+
+  if (storedAssignedSection) {
+    return storedAssignedSection;
+  }
+
+  const inferredCategories = Array.from(new Set(test.testQuestions.map((question) => normalizeSubjectCategory(question.subject))));
+
+  if (!test.config || typeof test.config !== "object" || Array.isArray(test.config)) {
+    return inferredCategories.length === 1 ? inferredCategories[0] : null;
+  }
+
+  const config = test.config as { questionConfigs?: Array<{ subject?: unknown }> };
+
+  if (Array.isArray(config.questionConfigs)) {
+    const configCategories = Array.from(
+      new Set(
+        config.questionConfigs
+          .map((questionConfig) => questionConfig?.subject)
+          .filter((subject): subject is string => typeof subject === "string")
+          .map((subject) => normalizeSubjectCategory(subject)),
+      ),
+    );
+
+    if (configCategories.length === 1) {
+      return configCategories[0];
+    }
+  }
+
+  return inferredCategories.length === 1 ? inferredCategories[0] : null;
 }
 
 export function getSectionChapters(test: ListedTest, category: AdminSubjectCategory) {
+  const storedAssignedSection = getStoredAssignedSection(test);
+
+  if (storedAssignedSection === category) {
+    return Array.from(new Set(test.testQuestions.map((question) => question.chapter)));
+  }
+
   return Array.from(
     new Set(
       test.testQuestions

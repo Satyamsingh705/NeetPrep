@@ -1,12 +1,12 @@
 import { notFound, redirect } from "next/navigation";
 import { ExamClient } from "@/components/exam/exam-client";
 import { getAttemptData } from "@/lib/data";
-import { requireCurrentStudentRecord } from "@/lib/student-auth";
+import { requireCurrentStudent } from "@/lib/student-auth";
 
 export const preferredRegion = "bom1";
 
 export default async function AttemptPage({ params }: { params: Promise<{ attemptId: string }> }) {
-  const student = await requireCurrentStudentRecord();
+  const student = await requireCurrentStudent();
   const { attemptId } = await params;
   const data = await getAttemptData(attemptId, student.id);
 

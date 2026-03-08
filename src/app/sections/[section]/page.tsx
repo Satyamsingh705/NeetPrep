@@ -2,10 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTestsForListing } from "@/lib/data";
 import { getTestsBySection, studentSections, type StudentSectionId } from "@/lib/student-sections";
-import { requireCurrentStudentRecord } from "@/lib/student-auth";
+import { requireCurrentStudent } from "@/lib/student-auth";
 
 export default async function StudentSectionPage({ params }: { params: Promise<{ section: string }> }) {
-  const student = await requireCurrentStudentRecord();
+  const student = await requireCurrentStudent();
   const { section } = await params;
   const tests = await getTestsForListing(student.id);
   const sectionId = section as StudentSectionId;

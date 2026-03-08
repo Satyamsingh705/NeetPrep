@@ -2,12 +2,12 @@ import { notFound } from "next/navigation";
 import type { ResultDashboardProps } from "@/components/results/result-dashboard";
 import ResultDashboardClient from "@/components/results/result-dashboard-client";
 import { getStudentAttemptResult } from "@/lib/data";
-import { requireCurrentStudentRecord } from "@/lib/student-auth";
+import { requireCurrentStudent } from "@/lib/student-auth";
 
 export const preferredRegion = "bom1";
 
 export default async function ResultPage({ params }: { params: Promise<{ attemptId: string }> }) {
-  const student = await requireCurrentStudentRecord();
+  const student = await requireCurrentStudent();
   const { attemptId } = await params;
   const attempt = await getStudentAttemptResult(attemptId, student.id);
 

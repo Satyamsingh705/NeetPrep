@@ -45,7 +45,7 @@ export function QuestionUploadPanel({ chapters }: { chapters: ChapterSummary[] }
 
       <section className="panel rounded-[1.2rem] p-5">
         <h3 className="text-xl font-semibold text-[#2f241c]">JSON Upload for Text Questions</h3>
-        <p className="mt-2 text-sm leading-6 text-[#6d5a49]">Upload an array of questions with options and answers. Use <span className="font-semibold">correctAnswers</span> like <span className="font-semibold">[&quot;A&quot;, &quot;C&quot;]</span> for multi-correct questions.</p>
+        <p className="mt-2 text-sm leading-6 text-[#6d5a49]">Upload an array of questions with options and answers. Use <span className="font-semibold">correctAnswers</span> like <span className="font-semibold">[&quot;A&quot;, &quot;C&quot;]</span> for multi-correct questions. Optional <span className="font-semibold">table</span> supports <span className="font-semibold">caption</span>, <span className="font-semibold">headers</span>, and <span className="font-semibold">rows</span> for match-the-following layouts.</p>
         <form
           className="mt-4 flex flex-col gap-4"
           onSubmit={async (event) => {

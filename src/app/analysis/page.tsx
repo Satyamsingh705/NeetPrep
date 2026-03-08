@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { StudentPortalAnalysis } from "@/components/student/student-portal-analysis";
 import { getStudentAnalytics, getStudentAttemptCount, getStudentHomeSummary, getTestsForListing } from "@/lib/data";
-import { requireCurrentStudentRecord } from "@/lib/student-auth";
+import { requireCurrentStudent } from "@/lib/student-auth";
 
 export default async function StudentAnalysisPage() {
-  const student = await requireCurrentStudentRecord();
+  const student = await requireCurrentStudent();
   const [summary, tests, totalAttempts, analytics] = await Promise.all([
     getStudentHomeSummary(),
     getTestsForListing(student.id),

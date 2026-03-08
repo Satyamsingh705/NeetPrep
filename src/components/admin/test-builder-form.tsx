@@ -46,6 +46,7 @@ export function TestBuilderForm({ chapters }: { chapters: ChapterSummary[] }) {
   const [unansweredMarks, setUnansweredMarks] = useState(0);
   const [mode, setMode] = useState<"NEET_PATTERN" | "CUSTOM">("NEET_PATTERN");
   const [published, setPublished] = useState(true);
+  const [assignedSection, setAssignedSection] = useState<AdminSubjectCategory>("MAJOR_TEST");
   const [neetRows, setNeetRows] = useState<NeetRow[]>(defaultNeetRows);
   const [customRows, setCustomRows] = useState<CustomRow[]>(defaultCustomRows);
   const [message, setMessage] = useState("");
@@ -89,6 +90,7 @@ export function TestBuilderForm({ chapters }: { chapters: ChapterSummary[] }) {
           incorrectMarks,
           unansweredMarks,
           published,
+          assignedSection: mode === "NEET_PATTERN" ? "MAJOR_TEST" : assignedSection,
           mode,
           subjectConfigs: mode === "NEET_PATTERN" ? neetRows : undefined,
           questionConfigs: mode === "CUSTOM" ? customRows.filter((row) => row.count > 0) : undefined,
@@ -191,6 +193,19 @@ export function TestBuilderForm({ chapters }: { chapters: ChapterSummary[] }) {
               <option value="CUSTOM">Custom Practice</option>
             </select>
           </label>
+          <label className="flex flex-col gap-2 text-sm text-[#6f5d4d]">
+            Student Section
+            <select
+              value={mode === "NEET_PATTERN" ? "MAJOR_TEST" : assignedSection}
+              onChange={(event) => setAssignedSection(event.target.value as AdminSubjectCategory)}
+              disabled={mode === "NEET_PATTERN"}
+              className="w-full min-w-0 rounded-lg border border-[#dacdbf] bg-white px-3 py-3 disabled:bg-[#f5f0e8] disabled:text-[#8a6a52]"
+            >
+              {adminSubjectOptions.map((subject) => (
+                <option key={subject.value} value={subject.value}>{subject.label}</option>
+              ))}
+            </select>
+          </label>
           <label className="md:col-span-2 xl:col-span-3 flex flex-col gap-2 text-sm text-[#6f5d4d]">
             Description
             <textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={3} className="w-full min-w-0 rounded-lg border border-[#dacdbf] bg-white px-3 py-3" />
@@ -282,7 +297,7 @@ export function TestBuilderForm({ chapters }: { chapters: ChapterSummary[] }) {
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <h3 className="text-xl font-semibold text-[#2f241c]">Create Test By Upload</h3>
-            <p className="mt-2 text-sm leading-6 text-[#6d5a49]">Choose one section for the full test, then upload JSON, ZIP, or PDF files. Every imported question will use the selected section and the test name as its label.</p>
+            <p className="mt-2 text-sm leading-6 text-[#6d5a49]">Upload JSON, ZIP, or PDF files to create a student-visible test. For single-subject JSON uploads, the student section is inferred automatically from the question subjects. For mixed-subject imports, the test is grouped under Major Test.</p>
           </div>
           <div className="w-fit rounded-full bg-[#fff7ef] px-4 py-2 text-xs font-semibold tracking-[0.2em] text-[#b46916]">DIRECT IMPORT</div>
         </div>
