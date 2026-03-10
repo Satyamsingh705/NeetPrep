@@ -734,7 +734,7 @@ export async function getTestSeriesGroupsWithDocumentsViaSupabase() {
     throw new Error(`Supabase test series document lookup failed: ${documentsError.message}`);
   }
 
-  const documentsByGroupId = new Map<string, Array<TestSeriesDocumentRow & { createdAt: Date; updatedAt: Date }>>();
+  const documentsByGroupId = new Map<string, Array<Omit<TestSeriesDocumentRow, "createdAt" | "updatedAt"> & { createdAt: Date; updatedAt: Date }>>();
 
   for (const document of documents ?? []) {
     if (!document.groupId) {

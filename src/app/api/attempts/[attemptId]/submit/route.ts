@@ -18,7 +18,7 @@ const submitPayloadSchema = z.object({
   totalTimeSpentSeconds: z.number().min(0),
 }).partial().optional();
 
-function isAttemptNotFoundError(error: unknown) {
+function isAttemptNotFoundError(error: unknown): error is Error {
   return error instanceof Error && error.message === "Attempt not found.";
 }
 

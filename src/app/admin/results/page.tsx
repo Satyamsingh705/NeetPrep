@@ -15,10 +15,14 @@ export default async function AdminResultsPage() {
         <p className="mt-3 max-w-3xl text-lg leading-7 text-[#6d5a49]">Review every submitted attempt and open the full question-wise analysis for each student.</p>
       </section>
       <AdminResultsManager
-        attempts={attempts.map((attempt) => {
+        attempts={attempts.flatMap((attempt) => {
+          if (!attempt) {
+            return [];
+          }
+
           const result = attempt.result as { score?: number } | null;
 
-          return {
+          return [{
             id: attempt.id,
             testId: attempt.test.id,
             studentName: attempt.studentName,
@@ -27,7 +31,7 @@ export default async function AdminResultsPage() {
             submittedAt: attempt.submittedAt ? formatDateTime(attempt.submittedAt) : null,
             testName: attempt.test.name,
             testCode: attempt.test.testCode,
-          };
+          }];
         })}
       />
     </main>

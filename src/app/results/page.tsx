@@ -5,6 +5,7 @@ import { requireCurrentStudent } from "@/lib/student-auth";
 export default async function StudentResultsPage() {
   const student = await requireCurrentStudent();
   const attempts = await getSubmittedAttemptResults(student.id);
+  const visibleAttempts = attempts.filter((attempt): attempt is NonNullable<typeof attempt> => attempt !== null);
 
   return (
     <main className="mx-auto flex max-w-[1400px] flex-col gap-4 px-0 py-4 sm:gap-6 sm:px-6 sm:py-8">
@@ -17,12 +18,12 @@ export default async function StudentResultsPage() {
       <section className="panel rounded-none border-x-0 p-4 sm:rounded-[1.4rem] sm:border-x sm:p-6">
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-xl font-semibold text-[#2f241c] sm:text-2xl">All Submitted Results</h2>
-          <div className="rounded-full bg-[#f6e4d3] px-3 py-1 text-sm font-semibold text-[#b85f20]">{attempts.length} results</div>
+          <div className="rounded-full bg-[#f6e4d3] px-3 py-1 text-sm font-semibold text-[#b85f20]">{visibleAttempts.length} results</div>
         </div>
 
         <div className="mt-5 grid gap-3 md:hidden">
-          {attempts.length > 0 ? (
-            attempts.map((attempt) => {
+          {visibleAttempts.length > 0 ? (
+            visibleAttempts.map((attempt) => {
               const result = attempt.result as { score?: number } | null;
 
               return (
@@ -65,7 +66,7 @@ export default async function StudentResultsPage() {
               </tr>
             </thead>
             <tbody>
-              {attempts.map((attempt) => {
+              {visibleAttempts.map((attempt) => {
                 const result = attempt.result as { score?: number } | null;
 
                 return (
@@ -86,7 +87,7 @@ export default async function StudentResultsPage() {
                   </tr>
                 );
               })}
-              {attempts.length === 0 ? (
+              {visibleAttempts.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-4 py-8 text-center text-[#736455]">
                     No submitted results yet.
