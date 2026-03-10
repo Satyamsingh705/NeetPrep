@@ -24,6 +24,15 @@ export function InstructionsClient({ testId }: { testId: string }) {
   const [accepted, setAccepted] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
 
+  function goBack() {
+    if (window.history.length > 1) {
+      window.history.back();
+      return;
+    }
+
+    window.location.href = "/";
+  }
+
   async function startTestInNewWindow() {
     setIsStarting(true);
 
@@ -140,19 +149,41 @@ export function InstructionsClient({ testId }: { testId: string }) {
   }
 
   return (
-    <div className="mt-7 flex flex-col gap-5 border-t border-[#e6d8ca] pt-6 lg:flex-row lg:items-center lg:justify-between">
+    <div className="mt-7 border-t border-[#e6d8ca] pt-6 pb-24 lg:pb-0">
       <label className="flex max-w-[760px] items-start gap-3 text-[1rem] leading-7 font-semibold text-[#3a3028] lg:text-[1.02rem]">
         <input type="checkbox" checked={accepted} onChange={(event) => setAccepted(event.target.checked)} className="mt-1 h-4 w-4 shrink-0" />
         <span>I have gone through the instructions, understood the legends, and will follow the rules.</span>
       </label>
-      <button
-        disabled={!accepted || isStarting}
-        className="btn-primary min-w-[170px] self-end lg:self-auto"
-        onClick={() => void startTestInNewWindow()}
-        type="button"
-      >
-        Start Test
-      </button>
+
+      <div className="mt-6 hidden lg:flex lg:items-center lg:justify-between">
+        <button type="button" className="btn-secondary min-w-[150px]" onClick={goBack}>
+          Back
+        </button>
+        <button
+          disabled={!accepted || isStarting}
+          className="btn-primary min-w-[170px]"
+          onClick={() => void startTestInNewWindow()}
+          type="button"
+        >
+          Start Test
+        </button>
+      </div>
+
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-[#d9cfc3] bg-[#f3f0ea] px-4 py-4 shadow-[0_-16px_30px_rgba(79,52,26,0.08)] lg:hidden">
+        <div className="grid grid-cols-2 gap-4">
+          <button type="button" className="btn-secondary w-full" onClick={goBack}>
+            Back
+          </button>
+          <button
+            disabled={!accepted || isStarting}
+            className="btn-primary w-full"
+            onClick={() => void startTestInNewWindow()}
+            type="button"
+          >
+            {isStarting ? "Starting..." : "Start Test"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

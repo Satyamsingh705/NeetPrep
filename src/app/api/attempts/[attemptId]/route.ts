@@ -18,6 +18,10 @@ const payloadSchema = z.object({
   totalTimeSpentSeconds: z.number().min(0),
 });
 
+function isAttemptNotFoundError(error: unknown) {
+  return error instanceof Error && error.message === "Attempt not found.";
+}
+
 export async function PUT(request: Request, { params }: { params: Promise<{ attemptId: string }> }) {
   try {
     const { attemptId } = await params;
@@ -31,6 +35,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ atte
     await persistAttempt({ attemptId, studentId: student.id, ...payload });
     return NextResponse.json({ ok: true });
   } catch (error) {
+    if (isAttemptNotFoundError(error)) {
+      return NextResponse.json({ error: error.message }, { status: 404 });
+    }
+
+    console.error("[attempt-save]", error);
     return NextResponse.json({ error: error instanceof Error ? error.message : "Failed to save attempt." }, { status: 400 });
   }
 }

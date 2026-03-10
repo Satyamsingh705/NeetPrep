@@ -3,6 +3,11 @@ import { z } from "zod";
 import { buildAdminSessionCookie } from "@/lib/admin-auth";
 import { verifyPassword } from "@/lib/password";
 import { prisma } from "@/lib/prisma";
+import {
+  getAdminByUsernameViaSupabase,
+  isSupabaseDatabaseFallbackEnabled,
+  shouldBypassPrismaForReads,
+} from "@/lib/supabase-db";
 
 const payloadSchema = z.object({
   username: z.string().min(1),
@@ -12,7 +17,28 @@ const payloadSchema = z.object({
 export async function POST(request: Request) {
   try {
     const payload = payloadSchema.parse(await request.json());
-    const admin = await prisma.admin.findUnique({ where: { username: payload.username } });
+    let admin: {
+      id: string;
+      username: string;
+      displayName: string | null;
+      passwordHash: string;
+    } | null = null;
+
+    if (await shouldBypassPrismaForReads()) {
+      admin = await getAdminByUsernameViaSupabase(payload.username);
+    } else {
+      try {
+        admin = await prisma.admin.findUnique({ where: { username: payload.username } });
+      } catch (error) {
+        const isDatabaseUnavailable = error instanceof Error && (error.name === "PrismaClientInitializationError" || /P1001/.test(error.message));
+
+        if (!isDatabaseUnavailable || !isSupabaseDatabaseFallbackEnabled()) {
+          throw error;
+        }
+
+        admin = await getAdminByUsernameViaSupabase(payload.username);
+      }
+    }
 
     if (!admin || !verifyPassword(payload.password, admin.passwordHash)) {
       return NextResponse.json({ error: "Invalid admin ID or password." }, { status: 401 });

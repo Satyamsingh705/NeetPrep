@@ -3,8 +3,29 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import {
+  getStudentByUsernameViaSupabase,
+  isSupabaseDatabaseFallbackEnabled,
+  shouldBypassPrismaForReads,
+} from "@/lib/supabase-db";
 
 const STUDENT_SESSION_COOKIE = "student_session";
+
+function isDatabaseUnavailableError(error: unknown) {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const message = error.message.toLowerCase();
+
+  return (
+    error.name === "PrismaClientInitializationError"
+    || message.includes("p1001")
+    || message.includes("p2024")
+    || message.includes("timed out fetching a new connection")
+    || message.includes("connection pool timeout")
+  );
+}
 
 function getStudentSessionSecret() {
   if (process.env.STUDENT_SESSION_SECRET) {
@@ -98,15 +119,50 @@ export const getCurrentStudentRecord = cache(async () => {
     return null;
   }
 
-  const student = await prisma.student.findUnique({
-    where: { username: sessionStudent.username },
-    select: {
-      id: true,
-      username: true,
-      displayName: true,
-      isActive: true,
-    },
-  });
+  let student: {
+    id: string;
+    username: string;
+    displayName: string | null;
+    isActive: boolean;
+  } | null = null;
+
+  if (await shouldBypassPrismaForReads()) {
+    const fallbackStudent = await getStudentByUsernameViaSupabase(sessionStudent.username);
+    student = fallbackStudent
+      ? {
+          id: fallbackStudent.id,
+          username: fallbackStudent.username,
+          displayName: fallbackStudent.displayName,
+          isActive: fallbackStudent.isActive,
+        }
+      : null;
+  } else {
+    try {
+      student = await prisma.student.findUnique({
+        where: { username: sessionStudent.username },
+        select: {
+          id: true,
+          username: true,
+          displayName: true,
+          isActive: true,
+        },
+      });
+    } catch (error) {
+      if (!isDatabaseUnavailableError(error) || !isSupabaseDatabaseFallbackEnabled()) {
+        throw error;
+      }
+
+      const fallbackStudent = await getStudentByUsernameViaSupabase(sessionStudent.username);
+      student = fallbackStudent
+        ? {
+            id: fallbackStudent.id,
+            username: fallbackStudent.username,
+            displayName: fallbackStudent.displayName,
+            isActive: fallbackStudent.isActive,
+          }
+        : null;
+    }
+  }
 
   if (!student?.isActive) {
     return null;

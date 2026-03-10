@@ -129,30 +129,30 @@ function formatDuration(totalSeconds: number) {
 export function ResultDashboard({ attempt, test, result }: ResultDashboardProps) {
   return (
     <div className="flex w-full flex-col gap-6">
-      <section className="panel rounded-[1.5rem] p-8">
-        <div className="flex flex-wrap items-start justify-between gap-6">
+      <section className="panel rounded-[1.3rem] p-5 sm:rounded-[1.5rem] sm:p-8">
+        <div className="flex flex-col gap-5 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-6">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.25em] text-[#b26d39]">Result</p>
-            <h1 className="mt-2 text-4xl font-semibold text-[#2f241c]">{test.name}</h1>
-            <p className="mt-3 text-lg leading-7 text-[#6d5a49]">Test ID {test.testCode ?? (test.id ? `TST-${test.id.slice(-8).toUpperCase()}` : "-")} · Attempt {attempt.id.slice(-8)} · {attempt.status} · Time taken {formatDuration(attempt.totalTimeSpentSeconds)}</p>
+            <h1 className="mt-2 text-3xl font-semibold text-[#2f241c] sm:text-4xl">{test.name}</h1>
+            <p className="mt-3 text-base leading-7 text-[#6d5a49] sm:text-lg">Test ID {test.testCode ?? (test.id ? `TST-${test.id.slice(-8).toUpperCase()}` : "-")} · Attempt {attempt.id.slice(-8)} · {attempt.status} · Time taken {formatDuration(attempt.totalTimeSpentSeconds)}</p>
           </div>
-          <div className="rounded-[1.2rem] bg-[#fff6ee] px-6 py-5 text-center">
+          <div className="rounded-[1.2rem] bg-[#fff6ee] px-5 py-4 text-center sm:px-6 sm:py-5">
             <div className="text-sm uppercase tracking-[0.25em] text-[#9a7557]">Total Marks</div>
-            <div className="mt-2 text-5xl font-semibold text-[#d7671b]">{result.score}</div>
+            <div className="mt-2 text-4xl font-semibold text-[#d7671b] sm:text-5xl">{result.score}</div>
             <div className="mt-2 text-sm text-[#6d5a49]">Out of {test.totalEvaluatedQuestions * 4}</div>
           </div>
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div className="panel rounded-[1.2rem] p-5"><div className="text-sm uppercase tracking-[0.2em] text-[#886d58]">Correct</div><div className="mt-2 text-4xl font-semibold text-[#30a451]">{result.summary.correct}</div></div>
         <div className="panel rounded-[1.2rem] p-5"><div className="text-sm uppercase tracking-[0.2em] text-[#886d58]">Incorrect</div><div className="mt-2 text-4xl font-semibold text-[#d85b58]">{result.summary.incorrect}</div></div>
         <div className="panel rounded-[1.2rem] p-5"><div className="text-sm uppercase tracking-[0.2em] text-[#886d58]">Accuracy</div><div className="mt-2 text-4xl font-semibold text-[#d7671b]">{result.summary.accuracy}%</div></div>
         <div className="panel rounded-[1.2rem] p-5"><div className="text-sm uppercase tracking-[0.2em] text-[#886d58]">Tab Switches</div><div className="mt-2 text-4xl font-semibold text-[#7d57a7]">{attempt.tabSwitchCount}</div></div>
       </section>
 
-      <section className="panel rounded-[1.4rem] p-6">
-        <h2 className="text-2xl font-semibold text-[#2f241c]">Subject-wise Performance</h2>
+      <section className="panel rounded-[1.25rem] p-5 sm:rounded-[1.4rem] sm:p-6">
+        <h2 className="text-xl font-semibold text-[#2f241c] sm:text-2xl">Subject-wise Performance</h2>
         <div className="mt-5 grid gap-4 xl:grid-cols-2">
           {result.subjectWise.map((subject) => (
             <div key={subject.subject} className="rounded-[1rem] border border-[#eadbcd] bg-[#fffdfa] p-5">
@@ -171,8 +171,8 @@ export function ResultDashboard({ attempt, test, result }: ResultDashboardProps)
         </div>
       </section>
 
-      <section className="panel rounded-[1.4rem] p-6">
-        <h2 className="text-2xl font-semibold text-[#2f241c]">Question-wise Analysis</h2>
+      <section className="panel rounded-[1.25rem] p-5 sm:rounded-[1.4rem] sm:p-6">
+        <h2 className="text-xl font-semibold text-[#2f241c] sm:text-2xl">Question-wise Analysis</h2>
         <div className="mt-5 max-h-[820px] overflow-y-auto pr-2">
           <div className="space-y-3">
             {result.questionWise.map((question) => (
@@ -183,7 +183,7 @@ export function ResultDashboard({ attempt, test, result }: ResultDashboardProps)
                     {question.outcome}
                   </div>
                 </div>
-                <div className="mt-3 rounded-[0.9rem] border border-[#efe3d6] bg-white p-4">
+                <div className="mt-3 rounded-[0.9rem] border border-[#efe3d6] bg-white p-3 sm:p-4">
                   <div className="text-sm font-semibold text-[#2f241c]">Question</div>
                   <QuestionContent
                     prompt={getDisplayPrompt(question.prompt) || "Image based question"}
@@ -216,7 +216,7 @@ export function ResultDashboard({ attempt, test, result }: ResultDashboardProps)
                     </div>
                   ) : null}
                 </div>
-                <div className="mt-2 flex flex-wrap gap-4">
+                <div className="mt-3 flex flex-wrap gap-3 text-[13px] sm:text-sm">
                   <span className={question.outcome === "incorrect" ? "font-semibold text-[#b54a40]" : question.outcome === "correct" ? "font-semibold text-[#2d7a42]" : undefined}>Selected: {question.selectedOptions.join(", ") || "-"}</span>
                   <span className="font-semibold text-[#2d7a42]">Correct: {question.correctAnswers.join(", ") || "-"}</span>
                   <span>Marks: {question.awardedMarks}</span>

@@ -14,8 +14,8 @@ export function QuestionContent({ prompt, table, promptClassName, tableClassName
       {table ? (
         <div className={tableClassName}>
           {table.caption ? <div className="mb-3 text-sm font-semibold text-[#5d4d40]">{table.caption}</div> : null}
-          <div className="overflow-x-auto rounded-[0.9rem] border border-[#ddd0c3] bg-white">
-            <table className="min-w-full border-collapse text-left text-sm text-[#2d241d]">
+          <div className="flex justify-center overflow-x-auto rounded-[0.9rem] border border-[#ddd0c3] bg-white">
+            <table className="mx-auto min-w-full border-collapse text-left text-sm text-[#2d241d] sm:min-w-0">
               {table.headers && table.headers.length > 0 ? (
                 <thead className="bg-[#0d14ff] text-white">
                   <tr>

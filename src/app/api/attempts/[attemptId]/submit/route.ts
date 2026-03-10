@@ -18,6 +18,10 @@ const submitPayloadSchema = z.object({
   totalTimeSpentSeconds: z.number().min(0),
 }).partial().optional();
 
+function isAttemptNotFoundError(error: unknown) {
+  return error instanceof Error && error.message === "Attempt not found.";
+}
+
 async function handleSubmit(request: Request, params: Promise<{ attemptId: string }>) {
   try {
     const { attemptId } = await params;
@@ -50,6 +54,11 @@ async function handleSubmit(request: Request, params: Promise<{ attemptId: strin
     await submitAttempt(attemptId, autoSubmitted, student.id);
     return NextResponse.json({ ok: true });
   } catch (error) {
+    if (isAttemptNotFoundError(error)) {
+      return NextResponse.json({ error: error.message }, { status: 404 });
+    }
+
+    console.error("[attempt-submit]", error);
     return NextResponse.json({ error: error instanceof Error ? error.message : "Failed to submit attempt." }, { status: 400 });
   }
 }

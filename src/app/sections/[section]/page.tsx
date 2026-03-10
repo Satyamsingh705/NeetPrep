@@ -19,13 +19,13 @@ export default async function StudentSectionPage({ params }: { params: Promise<{
   const activeTests = testsBySection[sectionId];
 
   return (
-    <main className="mx-auto flex max-w-[1400px] flex-col gap-8 px-6 py-8">
-      <section className="panel rounded-[1.5rem] p-8">
+    <main className="mx-auto flex max-w-[1400px] flex-col gap-4 px-0 py-4 sm:gap-6 sm:px-6 sm:py-8">
+      <section className="panel rounded-none border-x-0 p-4 sm:rounded-[1.5rem] sm:border-x sm:p-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.25em] text-[#b26d39]">Student Section</p>
-            <h1 className="mt-2 text-4xl font-semibold text-[#2f241c]">{activeSection.title}</h1>
-            <p className="mt-3 max-w-3xl text-lg leading-7 text-[#6d5a49]">{activeSection.description}</p>
+            <h1 className="mt-2 text-3xl font-semibold text-[#2f241c] sm:text-4xl">{activeSection.title}</h1>
+            <p className="mt-3 max-w-3xl text-base leading-7 text-[#6d5a49] sm:text-lg">{activeSection.description}</p>
           </div>
           <Link href="/" className="btn-secondary">
             Back To Sections
@@ -33,10 +33,10 @@ export default async function StudentSectionPage({ params }: { params: Promise<{
         </div>
       </section>
 
-      <section className="panel rounded-[1.4rem] p-6">
+      <section className="panel rounded-none border-x-0 p-4 sm:rounded-[1.4rem] sm:border-x sm:p-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 className="text-2xl font-semibold text-[#2f241c]">Available Tests</h2>
+            <h2 className="text-xl font-semibold text-[#2f241c] sm:text-2xl">Available Tests</h2>
             <p className="mt-1 text-sm text-[#65584a]">All tests inside the {activeSection.title} section.</p>
           </div>
           <div className="rounded-full bg-[#f6e4d3] px-3 py-1 text-sm font-semibold text-[#b85f20]">{activeTests.length} tests</div>
@@ -46,13 +46,13 @@ export default async function StudentSectionPage({ params }: { params: Promise<{
           {activeTests.length > 0 ? (
             activeTests.map((test) => (
               <div key={test.id} className="rounded-[1rem] border border-[#eadbcd] bg-white p-4">
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <h3 className="text-lg font-semibold text-[#2f241c]">{test.name}</h3>
                     <div className="mt-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#8a6a52]">{test.testCode ?? `TST-${test.id.slice(-8).toUpperCase()}`}</div>
                     <p className="mt-2 text-sm leading-6 text-[#65584a]">{test.description ?? "No description provided."}</p>
                   </div>
-                  <div className="rounded-full bg-[#f6e4d3] px-3 py-1 text-xs font-semibold text-[#b85f20]">{test.mode === "NEET_PATTERN" ? "NEET Pattern" : "Custom"}</div>
+                  <div className="self-start rounded-full bg-[#f6e4d3] px-3 py-1 text-xs font-semibold text-[#b85f20]">{test.mode === "NEET_PATTERN" ? "NEET Pattern" : "Custom"}</div>
                 </div>
                 <div className="mt-4 flex flex-wrap gap-2 text-xs text-[#6d5a49]">
                   {test.sectionChapters.map((chapter) => (
@@ -65,7 +65,7 @@ export default async function StudentSectionPage({ params }: { params: Promise<{
                   <span className="rounded-full bg-[#f5f0e8] px-3 py-1">{test.studentAttemptCount} attempts</span>
                 </div>
                 <div className="mt-5 flex gap-3">
-                  <Link href={`/tests/${test.id}/instructions`} className="btn-primary">
+                  <Link href={`/tests/${test.id}/instructions`} className="btn-primary w-full sm:w-auto">
                     Start Test
                   </Link>
                 </div>

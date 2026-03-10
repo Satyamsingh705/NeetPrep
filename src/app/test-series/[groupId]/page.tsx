@@ -21,13 +21,13 @@ export default async function TestSeriesGroupPage({ params }: { params: Promise<
   }));
 
   return (
-    <main className="mx-auto flex max-w-[1400px] flex-col gap-8 px-6 py-8">
-      <section className="panel rounded-[1.5rem] p-8">
+    <main className="mx-auto flex max-w-[1400px] flex-col gap-4 px-0 py-4 sm:gap-6 sm:px-6 sm:py-8">
+      <section className="panel rounded-none border-x-0 p-4 sm:rounded-[1.5rem] sm:border-x sm:p-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.25em] text-[#b26d39]">Test Series Group</p>
-            <h1 className="mt-2 text-4xl font-semibold text-[#2f241c]">{group.title}</h1>
-            {group.description ? <p className="mt-3 max-w-3xl text-lg leading-7 text-[#6d5a49]">{group.description}</p> : null}
+            <h1 className="mt-2 text-3xl font-semibold text-[#2f241c] sm:text-4xl">{group.title}</h1>
+            {group.description ? <p className="mt-3 max-w-3xl text-base leading-7 text-[#6d5a49] sm:text-lg">{group.description}</p> : null}
           </div>
           <Link href="/test-series" className="btn-secondary">
             Back To Groups
@@ -35,8 +35,8 @@ export default async function TestSeriesGroupPage({ params }: { params: Promise<
         </div>
       </section>
 
-      <section className="panel rounded-[1.4rem] p-6">
-        <div className="rounded-[1rem] border border-[#dbc5af] bg-[linear-gradient(180deg,#fffdf9, #fff7ef)] p-4 shadow-[0_18px_50px_rgba(126,88,47,0.08)]">
+      <section className="panel rounded-none border-x-0 p-4 sm:rounded-[1.4rem] sm:border-x sm:p-6">
+        <div className="rounded-[0.95rem] border border-[#dbc5af] bg-[linear-gradient(180deg,#fffdf9, #fff7ef)] p-3 shadow-[0_18px_50px_rgba(126,88,47,0.08)] sm:rounded-[1rem] sm:p-4">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 px-2">
             <div>
               <h2 className="text-2xl font-semibold text-[#2f241c]">Group Documents</h2>
@@ -48,7 +48,7 @@ export default async function TestSeriesGroupPage({ params }: { params: Promise<
             </div>
           </div>
 
-          <div className="overflow-x-auto rounded-[0.9rem] border border-[#d7c0a9] bg-white">
+          <div className="hidden overflow-x-auto rounded-[0.9rem] border border-[#d7c0a9] bg-white md:block">
             <table className="min-w-full border-collapse">
               <thead>
                 <tr className="bg-[linear-gradient(90deg,#a95e17,#d78232)] text-white">
@@ -93,6 +93,36 @@ export default async function TestSeriesGroupPage({ params }: { params: Promise<
                 ))}
               </tbody>
             </table>
+          </div>
+
+          <div className="grid gap-3 md:hidden">
+            {rows.map((row, index) => (
+              <div key={`group-card-${index}`} className="rounded-[0.95rem] border border-[#eadbcd] bg-white p-4">
+                <div className="text-xs font-semibold uppercase tracking-[0.16em] text-[#8a6a52]">Row {index + 1}</div>
+                <div className="mt-3 space-y-3">
+                  <div className="rounded-[0.8rem] bg-[#fffaf4] p-3">
+                    <div className="text-xs font-semibold uppercase tracking-[0.16em] text-[#b85f20]">Test Series</div>
+                    {row.series ? (
+                      <a href={row.series.filePath} target="_blank" rel="noreferrer" className="mt-2 block text-sm font-semibold text-[#2563eb] underline-offset-4 hover:underline">
+                        {row.series.title}
+                      </a>
+                    ) : (
+                      <div className="mt-2 text-sm text-[#b2a394]">No test series PDF</div>
+                    )}
+                  </div>
+                  <div className="rounded-[0.8rem] bg-[#f6fbf6] p-3">
+                    <div className="text-xs font-semibold uppercase tracking-[0.16em] text-[#2f7a42]">Answer Key</div>
+                    {row.answerKey ? (
+                      <a href={row.answerKey.filePath} target="_blank" rel="noreferrer" className="mt-2 block text-sm font-semibold text-[#2563eb] underline-offset-4 hover:underline">
+                        {row.answerKey.title}
+                      </a>
+                    ) : (
+                      <div className="mt-2 text-sm text-[#b2a394]">No answer key PDF</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>

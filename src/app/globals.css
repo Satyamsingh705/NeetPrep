@@ -24,6 +24,12 @@ html {
   background: var(--background);
 }
 
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -159,6 +165,9 @@ textarea {
 .btn-secondary,
 .btn-danger,
 .btn-warning {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 0.45rem;
   border: 1px solid transparent;
   padding: 0.75rem 1.15rem;
@@ -232,5 +241,33 @@ textarea {
 @media (max-width: 1180px) {
   .page-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1023px) {
+  .instruction-scale {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 767px) {
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger,
+  .btn-warning {
+    min-height: 2.75rem;
+    padding: 0.7rem 1rem;
+    font-size: 0.95rem;
+  }
+
+  .palette-button {
+    height: 2.6rem;
+    width: 100%;
+    min-width: 0;
+    font-size: 0.88rem;
+  }
+
+  .page-grid {
+    min-height: auto;
   }
 }

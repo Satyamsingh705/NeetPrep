@@ -3,12 +3,42 @@ import { prisma } from "@/lib/prisma";
 import { getQuestionTable } from "@/lib/question-content";
 import { evaluateAttempt, getInitialAnswerState, getPaletteStatus, normalizeStoredAnswer } from "@/lib/neet";
 import { getSubjectLabel } from "@/lib/subject-categories";
+import {
+  createAttemptViaSupabase,
+  getAttemptDataViaSupabase,
+  getAttemptResultViaSupabase,
+  getStudentAttemptCountViaSupabase,
+  getSubmittedAttemptResultsViaSupabase,
+  getStudentHomeSummaryViaSupabase,
+  getInstructionDataViaSupabase,
+  getTestSeriesGroupByIdViaSupabase,
+  getTestSeriesGroupsWithDocumentsViaSupabase,
+  getTestsForListingViaSupabase,
+  getUngroupedTestSeriesDocumentsViaSupabase,
+  isSupabaseDatabaseFallbackEnabled,
+  persistAttemptViaSupabase,
+  shouldBypassPrismaForReads,
+  updateAttemptSubmissionViaSupabase,
+} from "@/lib/supabase-db";
 import type { QuestionOption, QuestionPayload, StoredAnswersMap } from "@/lib/types";
 
 function isDatabaseUnavailableError(error: unknown) {
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    return error.code === "P1001" || error.code === "P2024";
+  }
+
+  if (error instanceof Prisma.PrismaClientInitializationError) {
+    return true;
+  }
+
+  if (error instanceof Error) {
+    const message = error.message.toLowerCase();
+
+    return message.includes("timed out fetching a new connection") || message.includes("connection pool timeout");
+  }
+
   return (
-    (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P1001")
-    || error instanceof Prisma.PrismaClientInitializationError
+    false
   );
 }
 
@@ -74,6 +104,10 @@ export async function getDashboardData() {
 }
 
 export async function getStudentHomeSummary() {
+  if (await shouldBypassPrismaForReads()) {
+    return getStudentHomeSummaryViaSupabase();
+  }
+
   try {
     const summary = await prisma.test.aggregate({
       where: {
@@ -87,6 +121,10 @@ export async function getStudentHomeSummary() {
     return { totalQuestions: summary._sum.totalQuestions ?? 0 };
   } catch (error) {
     if (isDatabaseUnavailableError(error)) {
+      if (isSupabaseDatabaseFallbackEnabled()) {
+        return getStudentHomeSummaryViaSupabase();
+      }
+
       return { totalQuestions: 0 };
     }
 
@@ -161,6 +199,10 @@ export async function getStudentsForAdmin() {
 }
 
 export async function getTestSeriesGroupsWithDocuments() {
+  if (await shouldBypassPrismaForReads()) {
+    return getTestSeriesGroupsWithDocumentsViaSupabase();
+  }
+
   try {
     return await prisma.testSeriesGroup.findMany({
       orderBy: [{ orderIndex: "asc" }, { createdAt: "asc" }],
@@ -172,6 +214,10 @@ export async function getTestSeriesGroupsWithDocuments() {
     });
   } catch (error) {
     if (isDatabaseUnavailableError(error)) {
+      if (isSupabaseDatabaseFallbackEnabled()) {
+        return getTestSeriesGroupsWithDocumentsViaSupabase();
+      }
+
       return [];
     }
 
@@ -180,6 +226,10 @@ export async function getTestSeriesGroupsWithDocuments() {
 }
 
 export async function getUngroupedTestSeriesDocuments() {
+  if (await shouldBypassPrismaForReads()) {
+    return getUngroupedTestSeriesDocumentsViaSupabase();
+  }
+
   try {
     return await prisma.testSeriesDocument.findMany({
       where: { groupId: null },
@@ -187,6 +237,10 @@ export async function getUngroupedTestSeriesDocuments() {
     });
   } catch (error) {
     if (isDatabaseUnavailableError(error)) {
+      if (isSupabaseDatabaseFallbackEnabled()) {
+        return getUngroupedTestSeriesDocumentsViaSupabase();
+      }
+
       return [];
     }
 
@@ -195,6 +249,10 @@ export async function getUngroupedTestSeriesDocuments() {
 }
 
 export async function getTestSeriesGroupById(groupId: string) {
+  if (await shouldBypassPrismaForReads()) {
+    return getTestSeriesGroupByIdViaSupabase(groupId);
+  }
+
   try {
     return await prisma.testSeriesGroup.findUnique({
       where: { id: groupId },
@@ -206,6 +264,10 @@ export async function getTestSeriesGroupById(groupId: string) {
     });
   } catch (error) {
     if (isDatabaseUnavailableError(error)) {
+      if (isSupabaseDatabaseFallbackEnabled()) {
+        return getTestSeriesGroupByIdViaSupabase(groupId);
+      }
+
       return null;
     }
 
@@ -214,6 +276,10 @@ export async function getTestSeriesGroupById(groupId: string) {
 }
 
 export async function getStudentAttemptCount(studentId: string) {
+  if (await shouldBypassPrismaForReads()) {
+    return getStudentAttemptCountViaSupabase(studentId);
+  }
+
   try {
     return await prisma.attempt.count({
       where: {
@@ -222,6 +288,10 @@ export async function getStudentAttemptCount(studentId: string) {
     });
   } catch (error) {
     if (isDatabaseUnavailableError(error)) {
+      if (isSupabaseDatabaseFallbackEnabled()) {
+        return getStudentAttemptCountViaSupabase(studentId);
+      }
+
       return 0;
     }
 
@@ -230,6 +300,10 @@ export async function getStudentAttemptCount(studentId: string) {
 }
 
 export async function getTestsForListing(studentId?: string, options?: { includeUnpublished?: boolean }) {
+  if (await shouldBypassPrismaForReads()) {
+    return getTestsForListingViaSupabase(studentId, options);
+  }
+
   try {
     const tests = await prisma.test.findMany({
       where: options?.includeUnpublished ? undefined : { published: true },
@@ -258,6 +332,10 @@ export async function getTestsForListing(studentId?: string, options?: { include
     }));
   } catch (error) {
     if (isDatabaseUnavailableError(error)) {
+      if (isSupabaseDatabaseFallbackEnabled()) {
+        return getTestsForListingViaSupabase(studentId, options);
+      }
+
       return [];
     }
 
@@ -358,14 +436,32 @@ export async function getStudentAnalytics(studentId: string) {
 }
 
 export async function getInstructionData(testId: string) {
-  const test = await prisma.test.findUnique({
-    where: { id: testId },
-    include: {
-      testQuestions: {
-        orderBy: { orderIndex: "asc" },
+  if (await shouldBypassPrismaForReads()) {
+    return getInstructionDataViaSupabase(testId);
+  }
+
+  let test;
+
+  try {
+    test = await prisma.test.findUnique({
+      where: { id: testId },
+      include: {
+        testQuestions: {
+          orderBy: { orderIndex: "asc" },
+        },
       },
-    },
-  });
+    });
+  } catch (error) {
+    if (isDatabaseUnavailableError(error)) {
+      if (isSupabaseDatabaseFallbackEnabled()) {
+        return getInstructionDataViaSupabase(testId);
+      }
+
+      return null;
+    }
+
+    throw error;
+  }
 
   if (!test) {
     return null;
@@ -383,15 +479,33 @@ export async function getInstructionData(testId: string) {
 }
 
 export async function startAttempt(testId: string, student?: { id: string; username: string; displayName: string | null }) {
-  const test = await prisma.test.findUnique({
-    where: { id: testId },
-    include: {
-      testQuestions: {
-        orderBy: { orderIndex: "asc" },
-        include: { question: true },
+  if (await shouldBypassPrismaForReads()) {
+    return createAttemptViaSupabase(testId, student);
+  }
+
+  let test;
+
+  try {
+    test = await prisma.test.findUnique({
+      where: { id: testId },
+      include: {
+        testQuestions: {
+          orderBy: { orderIndex: "asc" },
+          include: { question: true },
+        },
       },
-    },
-  });
+    });
+  } catch (error) {
+    if (isDatabaseUnavailableError(error)) {
+      if (isSupabaseDatabaseFallbackEnabled()) {
+        return createAttemptViaSupabase(testId, student);
+      }
+
+      throw error;
+    }
+
+    throw error;
+  }
 
   if (!test) {
     throw new Error("Test not found.");
@@ -414,22 +528,40 @@ export async function startAttempt(testId: string, student?: { id: string; usern
 }
 
 export async function getAttemptData(attemptId: string, studentId?: string) {
-  const attempt = await prisma.attempt.findFirst({
-    where: {
-      id: attemptId,
-      ...(studentId ? { studentId } : {}),
-    },
-    include: {
-      test: {
-        include: {
-          testQuestions: {
-            orderBy: { orderIndex: "asc" },
-            include: { question: true },
+  if (await shouldBypassPrismaForReads()) {
+    return getAttemptDataViaSupabase(attemptId, studentId);
+  }
+
+  let attempt;
+
+  try {
+    attempt = await prisma.attempt.findFirst({
+      where: {
+        id: attemptId,
+        ...(studentId ? { studentId } : {}),
+      },
+      include: {
+        test: {
+          include: {
+            testQuestions: {
+              orderBy: { orderIndex: "asc" },
+              include: { question: true },
+            },
           },
         },
       },
-    },
-  });
+    });
+  } catch (error) {
+    if (isDatabaseUnavailableError(error)) {
+      if (isSupabaseDatabaseFallbackEnabled()) {
+        return getAttemptDataViaSupabase(attemptId, studentId);
+      }
+
+      throw error;
+    }
+
+    throw error;
+  }
 
   if (!attempt) {
     return null;
@@ -462,6 +594,10 @@ export async function persistAttempt(params: {
   tabSwitchCount: number;
   totalTimeSpentSeconds: number;
 }) {
+  if (await shouldBypassPrismaForReads()) {
+    return persistAttemptViaSupabase(params);
+  }
+
   const attempt = await prisma.attempt.findFirst({
     where: {
       id: params.attemptId,
@@ -510,6 +646,16 @@ export async function submitAttempt(attemptId: string, autoSubmitted = false, st
     attemptData.answers,
   );
 
+  if (await shouldBypassPrismaForReads()) {
+    return updateAttemptSubmissionViaSupabase({
+      attemptId,
+      studentId,
+      status: autoSubmitted ? AttemptStatus.AUTO_SUBMITTED : AttemptStatus.SUBMITTED,
+      submittedAt: new Date(),
+      result,
+    });
+  }
+
   return prisma.attempt.update({
     where: { id: attemptId },
     data: {
@@ -521,6 +667,10 @@ export async function submitAttempt(attemptId: string, autoSubmitted = false, st
 }
 
 export async function getAttemptResult(attemptId: string) {
+  if (await shouldBypassPrismaForReads()) {
+    return getAttemptResultViaSupabase(attemptId);
+  }
+
   return prisma.attempt.findFirst({
     where: { id: attemptId },
     include: { test: true },
@@ -528,6 +678,10 @@ export async function getAttemptResult(attemptId: string) {
 }
 
 export async function getStudentAttemptResult(attemptId: string, studentId: string) {
+  if (await shouldBypassPrismaForReads()) {
+    return getAttemptResultViaSupabase(attemptId, studentId);
+  }
+
   return prisma.attempt.findFirst({
     where: {
       id: attemptId,
@@ -538,6 +692,10 @@ export async function getStudentAttemptResult(attemptId: string, studentId: stri
 }
 
 export async function getSubmittedAttemptResults(studentId?: string) {
+  if (await shouldBypassPrismaForReads()) {
+    return getSubmittedAttemptResultsViaSupabase(studentId);
+  }
+
   try {
     return await prisma.attempt.findMany({
       where: {

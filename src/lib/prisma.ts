@@ -1,8 +1,26 @@
 import { PrismaClient } from "@prisma/client";
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
+const databaseUrl = process.env.DATABASE_URL ?? "";
+const directSupabaseHostPattern = /@db\.[^.]+\.supabase\.co:5432/i;
+
+function warnIfRuntimeUsesDirectSupabaseHost() {
+  if (process.env.NODE_ENV === "production") {
+    return;
+  }
+
+  if (!databaseUrl || !directSupabaseHostPattern.test(databaseUrl)) {
+    return;
+  }
+
+  console.warn(
+    "[prisma] DATABASE_URL is using a direct Supabase host on port 5432. If that hostname does not resolve locally, Prisma reads will fail. Prefer the Supabase pooler URL for runtime and keep the direct URL only for DIRECT_URL.",
+  );
+}
 
 function createPrismaClient() {
+  warnIfRuntimeUsesDirectSupabaseHost();
+
   return new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
   });

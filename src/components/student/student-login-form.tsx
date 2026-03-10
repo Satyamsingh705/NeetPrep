@@ -7,8 +7,8 @@ const STUDENT_SESSION_CHANGED_EVENT = "student-session-changed";
 
 export function StudentLoginForm() {
   const router = useRouter();
-  const [username, setUsername] = useState("satyam");
-  const [password, setPassword] = useState("123");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -50,9 +50,9 @@ export function StudentLoginForm() {
         Password
         <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="w-full rounded-lg border border-[#dacdbf] bg-white px-3 py-3" />
       </label>
-      <div className="flex items-center gap-4">
-        <button disabled={isSubmitting} type="submit" className="btn-primary">Student Login</button>
-        {message ? <span className="text-sm text-[#6d5a49]">{message}</span> : null}
+      <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+        <button disabled={isSubmitting} type="submit" className="btn-primary w-full sm:w-auto">Student Login</button>
+        {message ? <span className="text-sm text-[#6d5a49] sm:flex-1">{message}</span> : null}
       </div>
     </form>
   );

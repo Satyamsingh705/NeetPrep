@@ -26,6 +26,16 @@ type ExamClientProps = {
   initialTotalTimeSpentSeconds: number;
 };
 
+class AttemptRequestError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "AttemptRequestError";
+    this.status = status;
+  }
+}
+
 const fallbackOptions: Array<{ key: OptionKey; text: string }> = [
   { key: "A", text: "Option A" },
   { key: "B", text: "Option B" },
@@ -80,6 +90,7 @@ export function ExamClient(props: ExamClientProps) {
   const lowTimeWarningShownRef = useRef(initialRemainingSeconds > 0 && initialRemainingSeconds <= 300);
   const dirtySaveRef = useRef(false);
   const saveInFlightRef = useRef(false);
+  const attemptUnavailableRef = useRef(false);
   const latestAttemptStateRef = useRef({
     answers,
     currentQuestionIndex,
@@ -91,15 +102,30 @@ export function ExamClient(props: ExamClientProps) {
   const currentQuestionPrompt = getDisplayPrompt(currentQuestion.prompt ?? "");
 
   const saveAttempt = useCallback(async (body: object) => {
-    await fetch(`/api/attempts/${props.attemptId}`, {
+    if (attemptUnavailableRef.current) {
+      return;
+    }
+
+    const response = await fetch(`/api/attempts/${props.attemptId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
+
+    if (!response.ok) {
+      let message = "Failed to save attempt.";
+
+      try {
+        const payload = await response.json();
+        message = payload.error ?? message;
+      } catch {}
+
+      throw new AttemptRequestError(message, response.status);
+    }
   }, [props.attemptId]);
 
   const flushAttemptSave = useCallback(async (force = false) => {
-    if (submittedRef.current || saveInFlightRef.current) {
+    if (submittedRef.current || saveInFlightRef.current || attemptUnavailableRef.current) {
       return;
     }
 
@@ -112,6 +138,15 @@ export function ExamClient(props: ExamClientProps) {
     try {
       await saveAttempt(latestAttemptStateRef.current);
       dirtySaveRef.current = false;
+    } catch (error) {
+      if (error instanceof AttemptRequestError && error.status === 404) {
+        attemptUnavailableRef.current = true;
+        dirtySaveRef.current = false;
+        setTabWarning("This attempt is no longer available. Autosave has been stopped.");
+        return;
+      }
+
+      throw error;
     } finally {
       saveInFlightRef.current = false;
     }
@@ -128,7 +163,7 @@ export function ExamClient(props: ExamClientProps) {
   }, [answers, currentQuestionIndex, tabSwitchCount, totalTimeSpentSeconds]);
 
   const submitAttempt = useCallback(async (auto = false) => {
-    if (submittedRef.current) {
+    if (submittedRef.current || attemptUnavailableRef.current) {
       return;
     }
 
@@ -150,7 +185,15 @@ export function ExamClient(props: ExamClientProps) {
     if (!response.ok) {
       submittedRef.current = false;
       setIsSubmitting(false);
-      window.alert("Unable to submit attempt.");
+
+      let message = "Unable to submit attempt.";
+
+      try {
+        const payload = await response.json();
+        message = payload.error ?? message;
+      } catch {}
+
+      window.alert(message);
       return;
     }
 
@@ -366,10 +409,11 @@ export function ExamClient(props: ExamClientProps) {
   const usesMultipleAnswers = currentQuestion.answerPolicy === "MULTIPLE";
   const paletteQuestions = [...questions].sort((left, right) => left.orderIndex - right.orderIndex);
   const isLowTime = remainingSeconds > 0 && remainingSeconds <= 300;
+  const isImageQuestion = currentQuestion.type === "IMAGE";
 
   return (
-    <div className="page-grid overflow-hidden bg-[#f4f2ed] text-[#2d241d]">
-      <aside className="border-r border-[#d8d1c6] bg-[#f3f0ea] px-4 py-4">
+    <div className="page-grid bg-[#f4f2ed] text-[#2d241d]">
+      <aside className="order-2 border-t border-[#d8d1c6] bg-[#f3f0ea] px-2 py-3 sm:px-3 lg:order-1 lg:border-r lg:border-t-0 lg:px-4 lg:py-4">
         <div className="rounded-md border border-[#d8d1c6] bg-[#f8f6f1] px-3 py-3 text-[1rem] font-semibold text-[#d7671b] shadow-sm">
           <div className="truncate" title={props.studentName}>
             {props.studentName}
@@ -402,8 +446,8 @@ export function ExamClient(props: ExamClientProps) {
 
         <div className="mt-6 rounded-md border border-[#d8d1c6] bg-[#f8f6f1] p-3 shadow-sm">
           <div className="border-b border-[#d08b37] pb-2 text-[1rem] font-semibold text-[#b46916]">Questions</div>
-          <div className="mt-3 max-h-[50vh] overflow-y-auto overflow-x-hidden pr-1">
-            <div className="grid grid-cols-5 gap-1.5">
+          <div className="mt-3 max-h-[38vh] overflow-y-auto overflow-x-hidden pr-1 lg:max-h-[50vh]">
+            <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-5">
               {paletteQuestions.map((question) => {
                 const status = getPaletteStatus(answers[question.id] ?? blankAnswer());
 
@@ -423,27 +467,27 @@ export function ExamClient(props: ExamClientProps) {
         </div>
       </aside>
 
-      <main className="flex h-screen flex-col overflow-hidden bg-[#f8f6f1]">
-        <div className="flex items-center justify-between border-b border-[#d8d1c6] bg-[#f8f6f1] px-4 py-2.5">
-          <div className="text-[0.82rem] text-[#342a22] lg:text-[0.9rem]">
+      <main className="order-1 flex min-h-screen flex-col bg-[#f8f6f1] lg:order-2 lg:h-screen lg:overflow-hidden">
+        <div className="flex flex-col gap-3 border-b border-[#d8d1c6] bg-[#f8f6f1] px-2 py-3 sm:px-4 lg:flex-row lg:items-center lg:justify-between lg:py-2.5">
+          <div className="text-[0.8rem] leading-6 text-[#342a22] sm:text-[0.88rem] lg:text-[0.9rem]">
             <span className="font-semibold text-[#d7671b]">Test Name-</span> {props.test.name}
-            <span className="ml-3 font-semibold text-[#8a6a52]">ID-</span> {props.test.testCode ?? `TST-${props.test.id.slice(-8).toUpperCase()}`}
+            <span className="ml-0 block font-semibold text-[#8a6a52] sm:ml-3 sm:inline">ID-</span> {props.test.testCode ?? `TST-${props.test.id.slice(-8).toUpperCase()}`}
           </div>
-          <div className="flex items-center gap-3">
-            <div className={`text-[1.2rem] font-semibold lg:text-[1.2rem] ${isLowTime ? "text-[#c63f32]" : "text-[#d7671b]"}`}>Time Remaining-</div>
-            <div className={`rounded-[0.45rem] border-2 px-3 py-2 text-[1.0rem] font-bold lg:text-[1.4rem] ${isLowTime ? "border-[#c63f32] bg-[#fff1ef] text-[#c63f32]" : "border-[#df7d39] bg-[#fff7f0] text-[#d7671b]"}`}>
+          <div className="flex items-center justify-between gap-3 sm:justify-start">
+            <div className={`text-[1rem] font-semibold sm:text-[1.1rem] lg:text-[1.2rem] ${isLowTime ? "text-[#c63f32]" : "text-[#d7671b]"}`}>Time Remaining</div>
+            <div className={`rounded-[0.45rem] border-2 px-3 py-2 text-[0.95rem] font-bold sm:text-[1.1rem] lg:text-[1.4rem] ${isLowTime ? "border-[#c63f32] bg-[#fff1ef] text-[#c63f32]" : "border-[#df7d39] bg-[#fff7f0] text-[#d7671b]"}`}>
               {formatTimer(remainingSeconds)}
             </div>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-6 py-5">
+        <div className="flex-1 overflow-y-auto px-2 py-4 sm:px-5 lg:px-6 lg:py-5">
           {timeWarning ? <div className="mb-4 rounded-md border border-[#efb1aa] bg-[#fff1ef] px-4 py-3 text-sm font-semibold text-[#c63f32]">{timeWarning}</div> : null}
           <div className="flex items-start gap-3">
             <div className="shrink-0 pt-1 text-[0.8rem] font-semibold leading-none text-[#dd504a]">
               Q {String(currentQuestion.orderIndex).padStart(2, "0")} of {String(props.test.totalQuestions).padStart(2, "0")}
             </div>
-            <div className="max-w-[900px] text-[0.98rem] leading-7 text-[#2d241d] lg:text-[1.02rem]">
+            <div className={`min-w-0 max-w-[900px] text-[#2d241d] ${isImageQuestion ? "text-[0.88rem] leading-6 sm:text-[0.92rem] lg:text-[0.94rem]" : "text-[0.94rem] leading-7 sm:text-[0.98rem] lg:text-[1.02rem]"}`}>
               {currentQuestion.type === "TEXT" ? (
                 <QuestionContent
                   prompt={currentQuestionPrompt}
@@ -456,14 +500,18 @@ export function ExamClient(props: ExamClientProps) {
           </div>
 
           {currentQuestion.type === "IMAGE" && currentQuestion.imagePath ? (
-            <div className="mt-6 max-h-[58vh] overflow-auto rounded-md border border-[#ddd0c3] bg-white p-4">
-              <img src={currentQuestion.imagePath} alt={`Question ${currentQuestion.orderIndex}`} className="mx-auto h-auto w-full object-contain" />
+            <div className="mt-4 rounded-md border border-[#ddd0c3] bg-white p-3 lg:mt-5 lg:max-h-[40vh] lg:overflow-hidden">
+              <img
+                src={currentQuestion.imagePath}
+                alt={`Question ${currentQuestion.orderIndex}`}
+                className="mx-auto h-auto max-h-[34vh] w-full object-contain lg:max-h-[35vh]"
+              />
             </div>
           ) : null}
-          <div className="mt-4 max-w-[760px]">
-            <div className="text-[1.15rem] font-semibold text-[#dd504a]">Options :</div>
+          <div className={`mt-4 max-w-[760px] ${isImageQuestion ? "lg:mt-3" : ""}`}>
+            <div className={`font-semibold text-[#dd504a] ${isImageQuestion ? "text-[0.96rem] sm:text-[1rem]" : "text-[1.05rem] sm:text-[1.15rem]"}`}>Options :</div>
             {usesMultipleAnswers ? <div className="mt-1 text-[0.76rem] text-[#7a6655]">Select all correct options.</div> : null}
-            <div className="mt-2 space-y-3 text-[0.96rem] leading-7 text-[#322920]">
+            <div className={`mt-2 text-[#322920] ${isImageQuestion ? "space-y-2 text-[0.88rem] leading-6 sm:text-[0.92rem]" : "space-y-3 text-[0.96rem] leading-7"}`}>
               {(currentQuestion.options ?? fallbackOptions).map((option) => (
                 <label key={option.key} className="flex cursor-pointer items-start gap-3">
                   <input
@@ -493,29 +541,29 @@ export function ExamClient(props: ExamClientProps) {
           {tabWarning ? <div className="mt-4 rounded-md border border-[#efc6a5] bg-[#fff4ea] px-4 py-3 text-sm text-[#8a5a31]">{tabWarning}</div> : null}
         </div>
 
-        <div className="mt-auto flex items-center justify-between border-t border-[#d8d1c6] bg-[#efebe5] px-4 py-2.5">
-          <div className="flex items-center gap-2">
-            <button type="button" className="btn-primary min-w-[72px] px-2.5 py-1.5 text-[0.8rem]" onClick={() => goToQuestion(currentQuestionIndex - 1)}>Previous</button>
-            <button type="button" className="btn-warning min-w-[72px] px-2.5 py-1.5 text-[0.8rem]" onClick={flagAndNext}>Flag</button>
-            <button type="button" className="btn-primary min-w-[72px] px-2.5 py-1.5 text-[0.8rem]" onClick={() => goToQuestion(currentQuestionIndex + 1)}>Next</button>
+        <div className="mt-auto flex flex-col gap-3 border-t border-[#d8d1c6] bg-[#efebe5] px-2 py-3 sm:px-4 lg:flex-row lg:items-center lg:justify-between lg:py-2.5">
+          <div className="grid grid-cols-3 gap-2 lg:flex lg:items-center">
+            <button type="button" className="btn-primary min-w-0 px-2.5 py-1.5 text-[0.78rem] sm:text-[0.8rem]" onClick={() => goToQuestion(currentQuestionIndex - 1)}>Previous</button>
+            <button type="button" className="btn-warning min-w-0 px-2.5 py-1.5 text-[0.78rem] sm:text-[0.8rem]" onClick={flagAndNext}>Flag</button>
+            <button type="button" className="btn-primary min-w-0 px-2.5 py-1.5 text-[0.78rem] sm:text-[0.8rem]" onClick={() => goToQuestion(currentQuestionIndex + 1)}>Next</button>
           </div>
-          <button type="button" className="btn-danger min-w-[78px] px-2.5 py-1.5 text-[0.8rem]" onClick={() => setShowSubmitDialog(true)}>End Test</button>
+          <button type="button" className="btn-danger w-full px-2.5 py-1.5 text-[0.8rem] sm:w-auto lg:min-w-[78px]" onClick={() => setShowSubmitDialog(true)}>End Test</button>
         </div>
       </main>
 
       {showSubmitDialog ? (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-[rgba(35,24,18,0.4)] p-6">
-          <div className="panel w-full max-w-xl rounded-[1.4rem] p-7">
-            <h2 className="text-3xl font-semibold text-[#2f241c]">Submit Test?</h2>
-            <p className="mt-3 text-lg leading-7 text-[#6d5a49]">Review the summary before submitting. Marked-for-review answers remain submitted as selected.</p>
-            <div className="mt-6 grid gap-3 md:grid-cols-3">
+        <div className="fixed inset-0 z-40 flex items-end justify-center bg-[rgba(35,24,18,0.4)] p-3 sm:items-center sm:p-6">
+          <div className="panel w-full max-w-xl rounded-[1.2rem] p-4 sm:rounded-[1.4rem] sm:p-7">
+            <h2 className="text-2xl font-semibold text-[#2f241c] sm:text-3xl">Submit Test?</h2>
+            <p className="mt-3 text-base leading-7 text-[#6d5a49] sm:text-lg">Review the summary before submitting. Marked-for-review answers remain submitted as selected.</p>
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
               <div className="rounded-[1rem] bg-[#effbf0] p-4 text-[#2f241c]">Answered <div className="mt-2 text-3xl font-semibold text-[#30a451]">{counts.answered}</div></div>
               <div className="rounded-[1rem] bg-[#fff7f6] p-4 text-[#2f241c]">Unanswered <div className="mt-2 text-3xl font-semibold text-[#d85b58]">{counts.pending}</div></div>
               <div className="rounded-[1rem] bg-[#faf4ff] p-4 text-[#2f241c]">Marked <div className="mt-2 text-3xl font-semibold text-[#7d57a7]">{counts.flagged}</div></div>
             </div>
-            <div className="mt-6 flex justify-end gap-3">
-              <button type="button" className="btn-secondary" onClick={() => setShowSubmitDialog(false)}>Cancel</button>
-              <button disabled={isSubmitting} type="button" className="btn-danger" onClick={() => void submitAttempt(false)}>
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button type="button" className="btn-secondary w-full sm:w-auto" onClick={() => setShowSubmitDialog(false)}>Cancel</button>
+              <button disabled={isSubmitting} type="button" className="btn-danger w-full sm:w-auto" onClick={() => void submitAttempt(false)}>
                 {isSubmitting ? "Submitting..." : "Confirm Submit"}
               </button>
             </div>
