@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { QuestionContent } from "@/components/questions/question-content";
+import { QuestionContent, renderQuestionText } from "@/components/questions/question-content";
 import { getPaletteStatus, normalizeStoredAnswer } from "@/lib/neet";
 import { getDisplayPrompt } from "@/lib/question-content";
 import type { OptionKey, QuestionPayload, StoredAnswersMap } from "@/lib/types";
@@ -528,7 +528,7 @@ export function ExamClient(props: ExamClientProps) {
                     }}
                     className="mt-[0.28rem] h-4 w-4"
                   />
-                  <div>{option.text}</div>
+                  <div>{renderQuestionText(option.text)}</div>
                 </label>
               ))}
             </div>

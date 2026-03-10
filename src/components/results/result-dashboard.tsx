@@ -1,4 +1,4 @@
-import { QuestionContent } from "@/components/questions/question-content";
+import { QuestionContent, renderQuestionText } from "@/components/questions/question-content";
 import { getDisplayPrompt } from "@/lib/question-content";
 import { getSubjectLabel } from "@/lib/subject-categories";
 import type { QuestionTable } from "@/lib/types";
@@ -205,7 +205,7 @@ export function ResultDashboard({ attempt, test, result }: ResultDashboardProps)
                         <div key={`${question.id}-${option.key}`} className={`rounded-[0.75rem] px-3 py-2 ${getOptionClass(optionState)}`}>
                           <div className="flex flex-wrap items-start justify-between gap-3">
                             <div>
-                              <span className="font-semibold text-[#2f241c]">{option.key}.</span> {option.text}
+                              <span className="font-semibold text-[#2f241c]">{option.key}.</span> {renderQuestionText(option.text)}
                             </div>
                             {optionState === "correct" || optionState === "correct-selected" ? <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#2d7a42]">Correct</span> : null}
                             {optionState === "wrong-selected" ? <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#a33f35]">Your Choice</span> : null}
